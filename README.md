@@ -264,22 +264,26 @@ El paquete rar es software **propietario** (freeware de RARLab). Como rar
    
  LINUX_OPTIONS, y systemctl unmask plymouth-start.service.  
 **Apagado: limitación conocida.** Por defecto systemd-shutdown sube el nivel del  
-   
- kernel (bump_sysctl_printk_log_level) en su fase final, antes de matar los procesos  
-   
- restantes, así que el "killing processes" aparece aunque el cmdline lleve  
-   
- quiet/loglevel=3. Se intentó systemd.log_target=journal para evitar ese *bump*,  
-   
- pero NO funciona: en la fase final systemd-shutdown vuelve a kmsg igual, y encima  
-   
- ese ajuste hace que el initramfs imprima en pantalla (rompe el arranque negro). La  
-   
- única vía limpia es Plymouth (servicio plymouth-poweroff), descartado aquí por la  
-   
- GPU Intel i915. Por ahora el apagado muestra ~3-4 líneas que parpadean <1 s; el  
-   
- arranque sí queda negro.  
+   
+ kernel (bump_sysctl_printk_log_level) en su fase final, antes de matar los procesos  
+   
+ restantes, así que el "killing processes" aparece aunque el cmdline lleve  
+   
+ quiet/loglevel=3. No hay arreglo por cmdline: se probó systemd.log_target=journal  
+   
+ (no funciona, y rompía el arranque negro) y meter Plymouth al initramfs para taparlo  
+   
+ (en la Intel Iris Xe, Plymouth no sobrevive al pivot al shutdown-ramfs y además  
+   
+ ensucia el boot, así que se descartó). Lo que **sí** se cerró: el "Broadcast message  
+   
+ ... going down" (un *wall*) se elimina con --no-wall en las acciones shutdown/reboot  
+   
+ de Noctalia (campo command en config/noctalia/settings.json). Estado final: arranque  
+   
+ en negro, y apagado con las ~3-4 líneas de systemd-shutdown que parpadean <1 s, ya  
+   
+ sin el broadcast.
 **Límite de batería.** Servicio systemd battery-charge-limit.service que escribe  
    
  el umbral en charge_control_end_threshold en cada arranque. Independiente del  

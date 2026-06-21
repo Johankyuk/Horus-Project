@@ -132,7 +132,7 @@
     "screenOverrides": []
   },
   "general": {
-    "avatarImage": "/home/kyu/Documentos/Configs/PFP/Kyu_HE_NB.png",
+    "avatarImage": "/home/kyu/kyu-os/PFP/Kyu_HE_NB.png",
     "dimmerOpacity": 0.2,
     "showScreenCorners": false,
     "forceBlackScreenCorners": false,
@@ -244,7 +244,7 @@
   "wallpaper": {
     "enabled": true,
     "overviewEnabled": false,
-    "directory": "/home/kyu/Documentos/Configs/Wallpapers",
+    "directory": "/home/kyu/kyu-os/Wallpapers",
     "monitorDirectories": [],
     "enableMultiMonitorDirectories": false,
     "showHiddenFiles": true,
@@ -293,19 +293,7 @@
     "clipboardWatchTextCommand": "wl-paste --type text --watch cliphist store",
     "clipboardWatchImageCommand": "wl-paste --type image --watch cliphist store",
     "position": "center",
-    "pinnedApps": [
-      "discord",
-      "steam",
-      "vivaldi-stable",
-      "arch-update",
-      "code-oss",
-      "com.obsproject.Studio",
-      "org.vinegarhq.Sober",
-      "libreoffice-writer",
-      "libreoffice-calc",
-      "thunar",
-      "Geometry Dash"
-    ],
+    "pinnedApps": [],
     "sortByMostUsed": true,
     "terminalCommand": "foot",
     "customLaunchPrefixEnabled": false,
@@ -420,7 +408,14 @@
     "onlySameOutput": false,
     "monitors": [],
     "pinnedApps": [
-      "steam_app_322170"
+      "discord",
+      "zen",
+      "youtube-music-for-desktop",
+      "steam",
+      "onlyoffice-desktopeditors",
+      "codium",
+      "thunar",
+      "org.vinegarhq.Sober"
     ],
     "colorizeIcons": true,
     "showLauncherIcon": true,
@@ -484,7 +479,7 @@
       },
       {
         "action": "reboot",
-        "command": "",
+        "command": "systemctl reboot --no-wall",
         "countdownEnabled": true,
         "enabled": true,
         "keybind": "2"
@@ -498,7 +493,7 @@
       },
       {
         "action": "shutdown",
-        "command": "",
+        "command": "systemctl poweroff --no-wall",
         "countdownEnabled": true,
         "enabled": true,
         "keybind": "3"
