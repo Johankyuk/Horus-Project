@@ -1,0 +1,31 @@
+    prefer-no-csd
+    screenshot-path null
+
+    environment {
+        ELECTRON_OZONE_PLATFORM_HINT "auto"
+        QT_QPA_PLATFORM "wayland"
+        QT_QPA_PLATFORMTHEME "gtk3"
+        QT_WAYLAND_DISABLE_WINDOWDECORATION "1"
+        XDG_CURRENT_DESKTOP "niri"
+        XDG_SESSION_TYPE "wayland"
+    }
+
+
+    debug {
+        // Allows notification actions and window activation from Noctalia.
+        honor-xdg-activation-with-invalid-serial
+    }
+
+    hotkey-overlay {
+       skip-at-startup
+    }
+
+    // Blur de fondo (Niri >=26.04). Parámetros fuertes ("bastante"): sube 'offset'
+    // primero (gratis en GPU) y 'passes' solo si aparecen artefactos. Por defecto
+    // usa xray (difumina el wallpaper una vez y lo reusa: lo más eficiente).
+    blur {
+        passes 4
+        offset 5
+        noise 0.02
+        saturation 1.5
+    }

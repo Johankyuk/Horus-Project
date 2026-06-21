@@ -1,0 +1,8 @@
+// ────────────── Startup Applications ──────────────
+// https://github.com/YaLTeR/niri/wiki/Configuration:-Miscellaneous#spawn-sh-at-startup
+
+    spawn-sh-at-startup "qs -c noctalia-shell"
+
+    // Luz nocturna: filtro de luz azul según amanecer/atardecer.
+    // Ajusta -l (latitud) y -L (longitud) a tu ciudad; -t noche / -T día en Kelvin.
+    spawn-sh-at-startup "wlsunset -l 19.2 -L -96.1 -t 4000 -T 6500"

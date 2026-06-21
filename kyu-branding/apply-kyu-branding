@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# Autor: Kyu
+# Aplica el branding de Kyu OS sobre los archivos que el paquete
+# 'filesystem' restaura en cada actualización.
+set -euo pipefail
+
+SRC="/usr/share/kyu-branding"
+
+# Identidad del sistema
+install -m644 "$SRC/os-release" /usr/lib/os-release
+ln -sf ../usr/lib/os-release /etc/os-release
+install -m644 "$SRC/lsb-release" /etc/lsb-release
+
+# Banner del TTY
+install -m644 "$SRC/issue" /etc/issue
+
+echo "kyu-branding: identidad Kyu OS aplicada."

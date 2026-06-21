@@ -1,0 +1,279 @@
+#!/usr/bin/env python3
+# Autor: Kyu — control de proyeccion / monitor externo en Niri
+#
+# Niri NO tiene espejo (mirror) nativo: cada salida es independiente y las
+# ventanas no se clonan entre monitores. Lo robusto para presentar es EXTENDER
+# y poner las slides en pantalla completa en el proyector; tu sigues con tus
+# notas en la laptop. El "espejo real" depende de wl-mirror y es fragil (su
+# ventana deja de refrescarse si pierde el foco). Por eso 'extender' es el modo
+# por defecto y 'espejo' viene con advertencia.
+#
+# Uso:
+#   proyectar              muestra el estado de las salidas (default)
+#   proyectar extender     enciende el externo a la derecha del interno  (RECOMENDADO)
+#   proyectar externo      deja SOLO el proyector (apaga la pantalla interna)
+#   proyectar interno      vuelve a SOLO la laptop (apaga externos)
+#   proyectar espejo       clona el interno en el proyector via wl-mirror (fragil)
+#   proyectar toggle       alterna extendido <-> solo-laptop, con o sin cable (keybind)
+
+import json
+import os
+import shutil
+import subprocess
+import sys
+
+
+def niri_outputs():
+    """Devuelve el dict de salidas que reporta niri por IPC (JSON)."""
+    try:
+        raw = subprocess.check_output(
+            ["niri", "msg", "--json", "outputs"],
+            text=True, stderr=subprocess.DEVNULL,
+        )
+    except FileNotFoundError:
+        sys.exit("error: no encuentro 'niri'. ¿Estas dentro de una sesion Niri?")
+    except subprocess.CalledProcessError:
+        sys.exit("error: niri no respondio. ¿Estas dentro de una sesion Niri?")
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError:
+        sys.exit("error: no pude leer la salida de 'niri msg --json outputs'.")
+
+
+def is_internal(name):
+    """La pantalla integrada de un laptop suele ser eDP-*, LVDS-* o DSI-*."""
+    return name.upper().startswith(("EDP", "LVDS", "DSI"))
+
+
+def split_outputs(outs):
+    internal = [n for n in outs if is_internal(n)]
+    external = [n for n in outs if not is_internal(n)]
+    return internal, external
+
+
+def msg_output(name, *args):
+    subprocess.run(
+        ["niri", "msg", "output", name, *args],
+        check=False, stderr=subprocess.DEVNULL,
+    )
+
+
+def logical_width(out):
+    """Ancho LOGICO (escalado) de una salida. Si esta apagada, estima desde su
+    modo actual/preferido para poder posicionar la siguiente a su derecha."""
+    lo = out.get("logical")
+    if lo:
+        return lo.get("width", 0)
+    modes = out.get("modes", [])
+    idx = out.get("current_mode")
+    if idx is not None and 0 <= idx < len(modes):
+        return modes[idx].get("width", 0)
+    for m in modes:
+        if m.get("is_preferred"):
+            return m.get("width", 0)
+    return modes[0].get("width", 0) if modes else 0
+
+
+def modo_actual(out):
+    modes = out.get("modes", [])
+    idx = out.get("current_mode")
+    if idx is None or not (0 <= idx < len(modes)):
+        return "—"
+    m = modes[idx]
+    return "{}x{}@{:.0f}".format(m["width"], m["height"], m["refresh_rate"] / 1000)
+
+
+def etiqueta(name, out):
+    make = (out.get("make") or "").strip()
+    model = (out.get("model") or "").strip()
+    txt = (make + " " + model).strip()
+    return txt or name
+
+
+def notificar(titulo, cuerpo=""):
+    """Notificacion de escritorio (Noctalia la captura via D-Bus freedesktop).
+    Silenciosa si no esta libnotify: el toggle no debe tronar por eso."""
+    if shutil.which("notify-send"):
+        subprocess.run(
+            ["notify-send", "-a", "Proyección", titulo, cuerpo],
+            check=False, stderr=subprocess.DEVNULL,
+        )
+
+
+def externo_encendido(outs, external):
+    """True si al menos un monitor externo esta activo (tiene 'logical' != null).
+    Lee el estado REAL del compositor, no procesos auxiliares: por eso el toggle
+    es fiable aunque wl-mirror sea fragil en Niri."""
+    return any(outs.get(e, {}).get("logical") is not None for e in external)
+
+
+def modo_path():
+    """Archivo donde se recuerda la INTENCION de proyeccion ('interno'/'extendido').
+    Sirve para que el toggle alterne aunque no haya cable: guarda el modo elegido
+    para aplicarlo cuando conectes el monitor."""
+    base = os.environ.get("XDG_STATE_HOME") or os.path.expanduser("~/.local/state")
+    return os.path.join(base, "kyu-os", "proyectar.modo")
+
+
+def leer_modo():
+    try:
+        with open(modo_path()) as f:
+            m = f.read().strip()
+        return m if m in ("interno", "extendido") else "interno"
+    except OSError:
+        return "interno"
+
+
+def guardar_modo(modo):
+    p = modo_path()
+    try:
+        os.makedirs(os.path.dirname(p), exist_ok=True)
+        with open(p, "w") as f:
+            f.write(modo + "\n")
+    except OSError:
+        pass  # no poder persistir no debe tronar el toggle
+
+
+def cmd_estado(outs):
+    internal, external = split_outputs(outs)
+    print("Salidas que ve Niri:\n")
+    for name, out in outs.items():
+        tipo = "interna" if is_internal(name) else "externa"
+        on = out.get("logical") is not None
+        estado = "ON " if on else "off"
+        modo = modo_actual(out) if on else "—"
+        print("  [{}] {:<12} ({:<7}) {:<14} {}".format(
+            estado, name, tipo, modo, etiqueta(name, out)))
+    if not external:
+        print("\nSin monitor externo conectado. Enchufa el HDMI/DP y reintenta.")
+    else:
+        print("\n  proyectar extender   -> externo a la derecha (recomendado)")
+        print("  proyectar externo    -> solo proyector")
+        print("  proyectar interno    -> solo laptop")
+
+
+def cmd_extender(outs):
+    internal, external = split_outputs(outs)
+    if not external:
+        sys.exit("Sin externo conectado. Enchufa el cable primero.")
+    intern_name = internal[0] if internal else None
+    if intern_name:
+        msg_output(intern_name, "on")
+        msg_output(intern_name, "position", "set", "0", "0")
+        x = logical_width(outs[intern_name])
+    else:
+        x = 0
+    for ext in external:
+        msg_output(ext, "on")
+        msg_output(ext, "position", "set", str(x), "0")
+        x += logical_width(outs[ext])
+    destino = ", ".join(external)
+    print("Listo: pantalla extendida. {} a la derecha de {}.".format(
+        destino, intern_name or "x=0"))
+    print("Para presentar: abre/mueve las slides al proyector y ponlas en")
+    print("pantalla completa. Tu te quedas con tus notas en la laptop.")
+
+
+def cmd_externo(outs):
+    internal, external = split_outputs(outs)
+    if not external:
+        sys.exit("Sin externo conectado.")
+    for ext in external:
+        msg_output(ext, "on")
+        msg_output(ext, "position", "set", "0", "0")
+    for intern_name in internal:
+        msg_output(intern_name, "off")
+    print("Solo proyector: la pantalla de la laptop quedo apagada.")
+    print("Para volver:  proyectar interno")
+
+
+def cmd_interno(outs):
+    internal, external = split_outputs(outs)
+    for ext in external:
+        msg_output(ext, "off")
+    for intern_name in internal:
+        msg_output(intern_name, "on")
+        msg_output(intern_name, "position", "set", "0", "0")
+    print("De vuelta a solo la pantalla interna.")
+
+
+def cmd_espejo(outs):
+    internal, external = split_outputs(outs)
+    if not external:
+        sys.exit("Sin externo conectado.")
+    if not internal:
+        sys.exit("No detecte pantalla interna que clonar.")
+    if not shutil.which("wl-mirror"):
+        sys.exit("Falta wl-mirror. Instalalo:  paru -S wl-mirror")
+    src, dst = internal[0], external[0]
+    print("AVISO: el espejo en Niri es fragil. Si la ventana del espejo pierde")
+    print("el foco puede congelarse. Para slides, 'proyectar extender' es mas")
+    print("confiable. Ctrl+C corta el espejo.\n")
+    msg_output(src, "on")
+    msg_output(dst, "on")
+    # -b screencopy: Niri NO implementa el backend export-dmabuf de wlroots; sin
+    # forzar screencopy, wl-mirror tarda en hacer fallback (10 frames fallidos).
+    try:
+        subprocess.run(
+            ["wl-mirror", "-b", "screencopy", "--fullscreen-output", dst, src],
+            check=False,
+        )
+    except KeyboardInterrupt:
+        pass
+
+
+def cmd_toggle(outs):
+    """Pensado para un keybind (Mod+P). Alterna SIEMPRE entre EXTENDIDO y SOLO
+    LAPTOP, haya o no cable:
+      - Con externo conectado: manda el estado real de las salidas (niri msg
+        --json outputs); aplica el cambio de verdad y lo recuerda.
+      - Sin externo: alterna solo la intencion guardada y avisa que queda 'en
+        espera' para cuando conectes el monitor.
+    Asi cada pulsacion cambia de estado y de notificacion. No usa wl-mirror (el
+    espejo en Niri es fragil); el espejo sigue disponible aparte como
+    'proyectar espejo'. Nunca falla con error."""
+    internal, external = split_outputs(outs)
+
+    if external:
+        # Con cable: el hardware real es la fuente de verdad.
+        if externo_encendido(outs, external):
+            cmd_interno(outs)
+            guardar_modo("interno")
+            notificar("Solo laptop", "Proyector apagado.")
+        else:
+            cmd_extender(outs)
+            guardar_modo("extendido")
+            notificar("Pantalla extendida",
+                      "Slides en {}, tus notas en la laptop.".format(", ".join(external)))
+    else:
+        # Sin cable: alternamos la intencion guardada y avisamos.
+        nuevo = "extendido" if leer_modo() == "interno" else "interno"
+        guardar_modo(nuevo)
+        if nuevo == "extendido":
+            notificar("Modo extendido (en espera)",
+                      "Se aplicará al conectar un monitor.")
+        else:
+            notificar("Solo laptop", "Sin monitor externo conectado.")
+
+
+ACCIONES = {
+    "": cmd_estado, "estado": cmd_estado, "status": cmd_estado,
+    "extender": cmd_extender, "extend": cmd_extender,
+    "externo": cmd_externo, "solo-externo": cmd_externo,
+    "interno": cmd_interno, "reset": cmd_interno,
+    "espejo": cmd_espejo, "duplicar": cmd_espejo, "mirror": cmd_espejo,
+    "toggle": cmd_toggle, "alternar": cmd_toggle,
+}
+
+
+def main():
+    arg = sys.argv[1].lower() if len(sys.argv) > 1 else "estado"
+    fn = ACCIONES.get(arg)
+    if fn is None:
+        sys.exit("Comando desconocido: {}\n"
+                 "Usa: proyectar [estado|extender|externo|interno|espejo|toggle]".format(arg))
+    fn(niri_outputs())
+
+
+if __name__ == "__main__":
+    main()

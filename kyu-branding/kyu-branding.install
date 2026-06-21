@@ -1,0 +1,12 @@
+post_install() {
+  /usr/bin/apply-kyu-branding
+}
+
+post_upgrade() {
+  /usr/bin/apply-kyu-branding
+}
+
+post_remove() {
+  echo "kyu-branding eliminado. Reinstala 'filesystem' para restaurar"
+  echo "la identidad original:  pacman -S filesystem lsb-release"
+}

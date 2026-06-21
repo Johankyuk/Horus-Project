@@ -1,0 +1,51 @@
+layout {
+    gaps 16                              // Gap between windows
+    center-focused-column "never"        // Don't auto-center focused column
+    background-color "transparent"       // <- needed for noctalia-shell to set wallpaper
+
+    preset-column-widths {
+        proportion 0.33333
+        proportion 0.5
+        proportion 0.66667
+    }
+
+    // ─────────── Tema Kyu OS — paleta morada (dark) ───────────
+    focus-ring {
+        width 4
+        active-color   "#8B20D4"         // Primary
+        inactive-color "#8B20D4"
+        urgent-color   "#F472B6"         // Error
+        // Alternativa con gradiente (descomenta para usarlo):
+        // active-gradient from="#8B20D4" to="#B040F0" angle=45 relative-to="workspace-view"
+    }
+
+    // Bordes: off (usas focus-ring). Colores listos si algún día lo activas.
+    border {
+        off
+        width 2
+        active-color   "#8B20D4"
+        inactive-color "#8B20D4"
+        urgent-color   "#F472B6"
+    }
+
+    tab-indicator {
+        active-color   "#B040F0"         // Tertiary
+        inactive-color "#2D1A58"         // Outline
+        urgent-color   "#F472B6"         // Error
+    }
+
+    insert-hint {
+        gradient from="#8B20D480" to="#B040F080" angle=45 relative-to="workspace-view"
+    }
+
+    shadow {
+        on
+        softness 30
+        spread 5
+        offset x=0 y=5
+        color "#07040F99"                // Shadow + alpha
+    }
+    // ──────────────────────────────────────────────────────────
+
+    struts {}
+}

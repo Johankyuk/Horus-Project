@@ -1,0 +1,34 @@
+# Maintainer: Kyu
+pkgname=kyu-branding
+pkgver=1.0.0
+pkgrel=1
+pkgdesc="Identidad del sistema Kyu OS: os-release, lsb-release, issue y fastfetch"
+arch=('any')
+url="https://github.com/kyu/kyu-os"
+license=('MIT')
+depends=('bash')
+optdepends=('fastfetch: logo ASCII de Kyu OS en la terminal')
+install=kyu-branding.install
+source=('os-release'
+        'lsb-release'
+        'issue'
+        'kyu-ascii.txt'
+        'config.jsonc'
+        'apply-kyu-branding'
+        'kyu-branding.hook')
+sha256sums=('SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP')
+
+package() {
+  # Fuentes del branding (el hook las copia a su destino real)
+  install -Dm644 os-release      "$pkgdir/usr/share/kyu-branding/os-release"
+  install -Dm644 lsb-release     "$pkgdir/usr/share/kyu-branding/lsb-release"
+  install -Dm644 issue           "$pkgdir/usr/share/kyu-branding/issue"
+  install -Dm644 kyu-ascii.txt   "$pkgdir/usr/share/kyu-branding/kyu-ascii.txt"
+
+  # Fastfetch a nivel sistema (este sí lo puede poseer el paquete)
+  install -Dm644 config.jsonc    "$pkgdir/etc/fastfetch/config.jsonc"
+
+  # Script aplicador + hook de pacman
+  install -Dm755 apply-kyu-branding "$pkgdir/usr/bin/apply-kyu-branding"
+  install -Dm644 kyu-branding.hook  "$pkgdir/usr/share/libalpm/hooks/kyu-branding.hook"
+}

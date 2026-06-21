@@ -1,0 +1,11 @@
+[Trigger]
+Operation = Install
+Operation = Upgrade
+Type = Package
+Target = filesystem
+Target = lsb-release
+
+[Action]
+Description = Re-aplicando branding de Kyu OS...
+When = PostTransaction
+Exec = /usr/bin/apply-kyu-branding

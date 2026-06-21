@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# kyu-proyeccion — Toggle entre modo espejo (duplicado) y extendido en niri.
+# Usable siempre, con o sin segundo monitor conectado: nunca falla.
+# Autor: Johan Kyu Kim Espinosa
+# Deps: wl-mirror, jq, niri, libnotify
+
+set -euo pipefail
+APP="Proyección"
+notificar() { notify-send -a "$APP" "$1" "${2:-}"; }
+
+# Si hay un espejo activo -> apagarlo y volver a extendido.
+if pgrep -x wl-mirror >/dev/null 2>&1; then
+    pkill -x wl-mirror
+    notificar "Modo extendido" "Cada monitor muestra su propio contenido."
+    exit 0
+fi
+
+# No hay espejo -> intentar duplicar el monitor enfocado en el otro.
+fuente=$(niri msg --json focused-output | jq -r '.name')
+destino=$(niri msg --json outputs \
+  | jq -r --arg src "$fuente" '[ .[] | select(.name != $src) ] | .[0].name // empty')
+
+if [[ -z "$destino" ]]; then
+    # Una sola pantalla: no hay nada que duplicar, pero NO es error.
+    notificar "Pantalla única" "Conecta un segundo monitor para duplicar."
+    exit 0
+fi
+
+wl-mirror --fullscreen-output "$destino" "$fuente" >/dev/null 2>&1 &
+notificar "Modo duplicado" "Espejo de $fuente proyectado en $destino."

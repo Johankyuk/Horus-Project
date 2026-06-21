@@ -1,0 +1,16 @@
+# Maintainer: Kyu
+pkgname=proyectar
+pkgver=1.0.0
+pkgrel=1
+pkgdesc="Toggle de monitores espejo/extendido para Niri (Kyu OS)"
+arch=('any')
+url="https://github.com/Johankyuk/kyu-os"
+license=('MIT')
+depends=('python' 'niri')
+source=('proyectar' 'kyu-proyeccion')
+sha256sums=('SKIP' 'SKIP')
+
+package() {
+  install -Dm755 proyectar      "$pkgdir/usr/bin/proyectar"
+  install -Dm755 kyu-proyeccion "$pkgdir/usr/bin/kyu-proyeccion"
+}

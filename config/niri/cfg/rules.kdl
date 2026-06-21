@@ -1,0 +1,42 @@
+    window-rule {
+        geometry-corner-radius 20 // Set every window radius to 20
+        clip-to-geometry true
+        open-maximized true // abre todas las ventanas a ancho completo (respeta la barra)
+    }
+
+     // if you use steam you will probably like these
+    window-rule {
+        match app-id="steam"
+        exclude title=r#"^[Ss]team$"#
+        open-floating true
+    }
+
+    window-rule {
+       match app-id="steam" title=r#"^notificationtoasts_\d+_desktop$"#
+       default-floating-position x=10 y=10 relative-to="bottom-right"
+       open-focused false
+    }
+
+    // Fondo difuminado en la terminal: foot pide blur a Niri (>=26.04). Hereda el
+    // geometry-corner-radius global (20) y necesita alpha<1 en foot.ini para verse.
+    window-rule {
+        match app-id="^foot$"
+        background-effect {
+            blur true
+        }
+    }
+
+    // Zen Browser: blur detrás de sus zonas transparentes. SOLO se ve si activas la
+    // transparencia nativa en Zen (Ajustes → Apariencia, o el tema). Cubre zen,
+    // zen-alpha, zen-twilight por si cambia el app-id entre canales.
+    window-rule {
+        match app-id="^zen"
+        background-effect {
+            blur true
+        }
+    }
+
+    layer-rule {
+        match namespace="^noctalia-wallpaper*"
+        place-within-backdrop true
+    }
