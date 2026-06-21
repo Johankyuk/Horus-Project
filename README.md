@@ -9,6 +9,21 @@ arranque, y deja la batería con límite de carga.
 
 ---
 
+## Instalación rápida
+
+Sobre una **CachyOS** recién instalada, un solo comando deja Kyu OS completo:
+
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/Johankyuk/kyu-os/main/bootstrap.sh)
+```
+
+El bootstrap instala `git`, clona este repo en `~/kyu-os` y lanza el setup. Acepta
+los mismos flags que el setup (ej. `--dry-run`). Para clonar en otra ruta, exporta
+`KYU_OS_DIR=~/otra/ruta` antes. Si ya tienes el repo clonado, salta el bootstrap y
+corre `kyu-setup` directo.
+
+---
+
 ## Requisitos previos
 
 Antes de correr el script:
@@ -23,13 +38,13 @@ Antes de correr el script:
 
 ## Estructura de archivos
 
-Toda la carpeta del setup vive en `~/Documentos/Configs/`. El script busca sus
+El repo vive en `~/kyu-os/` (donde lo clona el bootstrap). El script busca sus
 recursos (configs, tema de SDDM, imágenes) **en su misma carpeta**, así que
 funciona sin importar desde dónde se ejecute, mientras todo el contenido esté
 junto:
 
 ```
-~/Documentos/Configs/
+~/kyu-os/
 ├── setup_master.sh
 ├── README.md
 ├── config/                 <- dotfiles que se despliegan en ~/.config
@@ -46,9 +61,9 @@ junto:
 └── Wallpapers/             <- wallpapers; Noctalia los lee de aquí          [LO APORTAS TÚ]
 ```
 
-`config/` es la **fuente de verdad** de tus dotfiles: la misma carpeta debe
-alimentar `airootfs/etc/skel/.config/` en el proyecto kyu-os (ISO). Edita las
-configs aquí, no en dos lados.
+`config/` es la **fuente de verdad** de tus dotfiles: se despliega sobre
+`~/.config` en cada corrida. Edita las configs aquí (en el repo), no en `~/.config`
+directo, o el siguiente deploy las pisa.
 
 Las carpetas marcadas **[LO APORTAS TÚ]** no vienen en el paquete: cópialas de tu
 setup actual. Si `sugar-dark-kyu/` falta, SDDM queda con su tema por defecto; el
@@ -57,12 +72,13 @@ igual. El resto del setup funciona igual.
 
 ## Uso
 
-Deja la carpeta completa en `~/Documentos/Configs/`. Ya ubicada ahí:
+Si usaste el bootstrap, el setup ya corrió. Para re-ejecutarlo luego, usa el atajo
+`kyu-setup` desde cualquier carpeta (la primera vez, sin atajos aún:
+`bash ~/kyu-os/setup_master.sh`):
 
 ```bash
-cd ~/Documentos/Configs
-bash setup_master.sh              # muestra el plan, pide confirmación y procede
-bash setup_master.sh --dry-run    # opcional: solo el plan, sin tocar nada ni preguntar
+kyu-setup              # muestra el plan, pide confirmación y procede
+kyu-dry                # opcional: solo el plan, sin tocar nada ni preguntar
 ```
 
 La corrida normal **muestra primero el plan** (qué instalaría y qué configs
@@ -93,7 +109,11 @@ Con `--solo=…` nunca reinicia (es parcial).
 | Comando | Qué hace |
 |---------|----------|
 | `kyu-setup` | Corre el setup desde cualquier carpeta (acepta los mismos flags) |
-| `kyu-update` | Actualiza todo: repos + AUR (`paru -Syu`) y Flatpaks |
+| `kyu-update` | Actualiza todo: mirrors + repos/AUR (`paru -Syu`) y Flatpaks |
+| `kyu-check` | Healthcheck: valida que todo quedó bien (atajo de `--check`) |
+| `kyu-sync` | Vuelca tu `~/.config` actual de vuelta al repo, listo para commitear (atajo de `--capturar`) |
+| `kyu-dry` | Simula la corrida completa sin tocar nada (atajo de `--dry-run`) |
+| `kyu-verifica` | Compara los dotfiles del repo vs tu `~/.config` activa, sin tocar nada |
 | `apps` | Lista o lanza cualquier app, **incluidas las ocultas** del launcher: `apps` lista (id → nombre), `apps <id>` lanza |
 | `proyectar` | Gestión de monitores; `proyectar toggle` (Mod+P) alterna duplicar ↔ extendido |
 
@@ -105,40 +125,33 @@ oculto. Para correr algo oculto usa `apps` o la terminal (Mod+Return).
 
 ## Migrar a otra máquina
 
-El despliegue es **unidireccional**: el repo es la fuente de verdad y se copia
-sobre `~/.config` (pisando lo que haya). Por eso, todo lo que ajustes por GUI
-(Noctalia) o a mano vive **solo en el activo** hasta que lo vuelques al repo.
-Antes de migrar hay que capturar ese estado, o el setup desplegará una versión
-vieja en la máquina nueva.
+Con el repo en git, migrar es trivial. El despliegue es **unidireccional** (el repo
+pisa `~/.config`), así que lo que ajustes por GUI vive solo en el activo hasta que
+lo vuelques al repo. Antes de migrar hay que capturar ese estado, o el setup
+desplegará una versión vieja en la máquina nueva.
 
-**En la máquina vieja (origen):**
-
-```bash
-cd ~/Documentos/Configs
-bash setup_master.sh --capturar    # vuelca ~/.config -> repo (niri, foot, noctalia)
-# revisa los cambios (si usas git) y commitea, o comprime la carpeta:
-tar czf ~/kyu-configs.tar.gz -C ~/Documentos Configs
-```
-
-`--capturar` deja un respaldo del repo previo en `.repo-backup-<fecha>/` por si
-algo se volcó mal. Es idempotente: si el repo ya refleja tu activo, no toca nada.
-
-**En la máquina nueva (destino):**
+**En la máquina vieja (origen)** — captura y sube tus cambios:
 
 ```bash
-# 1. CachyOS base instalado + paru/yay + internet (ver Requisitos previos)
-# 2. coloca la carpeta en su sitio:
-tar xzf kyu-configs.tar.gz -C ~/Documentos
-cd ~/Documentos/Configs
-# 3. un solo comando lo restaura todo:
-bash setup_master.sh
+kyu-sync                       # vuelca ~/.config -> repo (niri, foot, noctalia)
+cd ~/kyu-os
+git add -A && git commit -m "sync configs" && git push
 ```
 
-Eso instala apps, despliega tus dotfiles, aplica tema/cursor/login/branding y
-deja la batería con límite. Cierra sesión y entra de nuevo, y listo.
+`kyu-sync` deja un respaldo del repo previo en `.repo-backup-<fecha>/` por si algo
+se volcó mal, y es idempotente: si el repo ya refleja tu activo, no toca nada.
 
-**Regla de oro:** tocas algo por GUI → `--capturar` antes de cerrar. Así el repo
-siempre está al día y la migración es un solo comando de cada lado.
+**En la máquina nueva (destino)** — un solo comando:
+
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/Johankyuk/kyu-os/main/bootstrap.sh)
+```
+
+Eso clona el repo e instala apps, despliega dotfiles, aplica tema/cursor/login/
+branding y deja la batería con límite. Cierra sesión y entra de nuevo, y listo.
+
+**Regla de oro:** tocas algo por GUI → `kyu-sync` + commit antes de cerrar. Así el
+repo siempre está al día y la máquina nueva es un solo comando.
 
 ---
 
@@ -150,7 +163,7 @@ listan los fallos reales (no pinta ✔ en todo a ciegas).
 1. **Snapshot pre-setup** — crea un snapshot con snapper antes de tocar nada
    (red de seguridad; solo si snapper está configurado para `root`).
 2. **Actualizar sistema** — `pacman -Syu` (omitible con `--skip-update`).
-3. **Paquetes de repos** — Niri, Vivaldi, Discord, Code-OSS, Steam, LibreOffice,
+3. **Paquetes de repos** — Niri, Zen, Discord, Code-OSS, Steam, LibreOffice,
    OBS, Audacity, VLC, mpv, imv, Foot, Thunar + plugins, fuentes Nerd, etc., **en una sola
    transacción**.
 4. **Paquetes AUR** — Noctalia, YouTube Music, juguetes de terminal, Catppuccin,
@@ -186,7 +199,7 @@ listan los fallos reales (no pinta ✔ en todo a ciegas).
 
 El script **elimina** software que considera redundante:
 
-- Navegadores: Firefox, Chromium, Chrome, Brave — deja solo Vivaldi.
+- Navegadores: Firefox, Chromium, Chrome, Brave — deja solo Zen.
 - Terminales: Alacritty, Kitty, WezTerm — deja solo Foot.
 - Gestores de archivos: Nautilus, Dolphin, Nemo, Caja, PCManFM — deja solo Thunar.
 
@@ -212,7 +225,7 @@ el resto continúa.
   Verifícalo con `cat /sys/class/power_supply/BAT0/charge_control_end_threshold`;
   si pasa, hace falta un hook de `systemd-sleep`.
 - Cierra sesión y vuelve a entrar (cursor y SDDM); luego `sudo reboot`.
-- Corre `bash setup_master.sh --check` para validar que todo quedó.
+- Corre `kyu-check` para validar que todo quedó.
 
 ## Notas técnicas
 

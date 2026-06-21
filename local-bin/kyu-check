@@ -1,0 +1,4 @@
+#!/bin/bash
+# kyu-check: healthcheck de Kyu OS (valida que todo quedo bien). Autor: Kyu
+# Atajo de: kyu-setup --check
+exec kyu-setup --check "$@"

@@ -1,0 +1,4 @@
+#!/bin/bash
+# kyu-sync: vuelca tu ~/.config actual de vuelta al repo, para commitear. Autor: Kyu
+# Atajo de: kyu-setup --capturar
+exec kyu-setup --capturar "$@"
