@@ -1,0 +1,6 @@
+#!/bin/bash
+# kyu-limpia: borra restos de versiones viejas del setup y sale. Autor: Kyu
+# Atajo de: kyu-setup --limpiar
+# (~/Imágenes/PFP y Wallpapers de instalaciones viejas, log viejo del repo.)
+# Pide confirmación; no toca el sistema.
+exec kyu-setup --limpiar "$@"

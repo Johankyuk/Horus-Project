@@ -11,9 +11,9 @@ Script de restauración automática del sistema. Convierte una instalación base
 Sobre una **CachyOS** recién instalada, un solo comando deja Kyu OS completo:  
 bash <(curl -fsSL https://raw.githubusercontent.com/Johankyuk/kyu-os/main/bootstrap.sh)  
    
-El bootstrap instala git, clona este repo en ~/kyu-os y lanza el setup. Acepta  
+El bootstrap instala git, clona este repo en ~/kyu-os y lanza el setup.  
    
- los mismos flags que el setup (ej. --dry-run). Para clonar en otra ruta, exporta  
+ Para clonar en otra ruta, exporta  
    
  KYU_OS_DIR=~/otra/ruta antes. Si ya tienes el repo clonado, salta el bootstrap y  
    
@@ -23,7 +23,7 @@ El bootstrap instala git, clona este repo en ~/kyu-os y lanza el setup. Acepta
 Antes de correr el script:  
 - **CachyOS** instalado (base funcional, con systemd-boot como bootloader).  
 - **AUR helper**: paru o yay. Necesario para instalar; los modos  
- --capturar, --check y --dry-run no lo requieren.  
+ kyu-sync, kyu-check y kyu-dry no lo requieren.  
 - **Conexión a internet** estable; se descargan bastantes paquetes.  
 - Usuario con permisos **sudo**. El script pide la contraseña al inicio y la  
    
@@ -79,37 +79,27 @@ La corrida normal **muestra primero el plan** (qué instalaría y qué configs
    
  continúa si respondes s; cualquier otra cosa cancela sin modificar el sistema. Ya  
    
- no hace falta correr --dry-run y luego de nuevo: es un solo paso. El --dry-run  
+ no hace falta simular y luego correr de nuevo: es un solo paso. kyu-dry  
    
  queda como atajo para solo inspeccionar el plan y salir.  
-**Flags:**  
-| | |  
-|-|-|  
-| **Flag** | **Efecto** |   
-| --skip-update | No corre pacman -Syu (iteraciones rápidas) |   
-| --dry-run | Solo reporta qué instalaría/desplegaría; no toca nada |   
-| --check | Healthcheck post-setup: valida el estado y sale |   
-| --capturar | Vuelca tu config activa (~/.config) de vuelta al repo y sale. No instala nada ni pide sudo |   
-| --bateria=N | Límite de carga de batería en N% (default 80; 0 = off) |   
-| --no-bateria | No configura el límite de carga |   
-| --limpiar | Borra restos de versiones viejas del setup (~/Imágenes/PFP y Wallpapers, log viejo en el repo) y sale. Pide confirmación; no toca el sistema |   
-   
 **Reinicio:** la  **primera corrida completa reinicia el equipo solo** (cuenta de  
    
  10 s con Ctrl+C para cancelar), para aplicar todo de una. A partir de la segunda  
    
  corrida ya no reinicia: solo avisa con sudo reboot si algún cambio lo amerita.  
    
- Con --solo=… nunca reinicia (es parcial).  
+ Con kyu-solo nunca reinicia (es parcial).  
 **Atajos (quedan en PATH tras la primera corrida)**  
 | | |  
 |-|-|  
 | **Comando** | **Qué hace** |   
-| kyu-setup | Corre el setup desde cualquier carpeta (acepta los mismos flags) |   
+| kyu-setup | Corre el setup desde cualquier carpeta (muestra el plan y pide confirmación) |   
 | kyu-update | Actualiza todo: mirrors + repos/AUR (paru -Syu) y Flatpaks |   
-| kyu-check | Healthcheck: valida que todo quedó bien (atajo de --check) |   
-| kyu-sync | Vuelca tu ~/.config actual de vuelta al repo, listo para commitear (atajo de --capturar) |   
-| kyu-dry | Simula la corrida completa sin tocar nada (atajo de --dry-run) |   
+| kyu-check | Healthcheck: valida que todo quedó bien |   
+| kyu-sync | Vuelca tu ~/.config actual de vuelta al repo, listo para commitear |   
+| kyu-dry | Simula la corrida completa sin tocar nada |   
+| kyu-solo | Corre solo la(s) sección(es) que indiques: kyu-solo lista las muestra, kyu-solo cursor corre una, kyu-solo 7,9 por número. No reinicia |   
+| kyu-limpia | Borra restos de versiones viejas del setup (PFP/Wallpapers en ~/Imágenes, log viejo del repo) y sale. Pide confirmación; no toca el sistema |   
 | kyu-verifica | Compara los dotfiles del repo vs tu ~/.config activa, sin tocar nada |   
 | apps | Lista o lanza cualquier app, **incluidas las ocultas** del launcher: apps lista (id → nombre), apps <id> lanza |   
 | proyectar | Gestión de monitores; proyectar toggle (Mod+P) alterna duplicar ↔ extendido |   
@@ -153,7 +143,7 @@ El setup corre en 13 secciones. Un fallo en una no detiene las demás; al final 
 1. **Snapshot pre-setup** — crea un snapshot con snapper antes de tocar nada  
    
  (red de seguridad; solo si snapper está configurado para root).  
-2. **Actualizar sistema** — pacman -Syu (omitible con --skip-update).  
+2. **Actualizar sistema** — pacman -Syu.  
 3. **Paquetes de repos** — Niri, Zen, Discord, Code-OSS, Steam, LibreOffice,  
    
  OBS, Audacity, VLC, mpv, imv, Foot, Thunar + plugins, fuentes Nerd, etc., **en una sola**  
@@ -316,5 +306,5 @@ El paquete rar es software **propietario** (freeware de RARLab). Como rar
 - reloj_12h.sh → el reloj 12h de Noctalia ([7], parche del settings.json) y de SDDM  
    
  ([10], HourFormat en el theme.conf del tema).  
-- limpiar_huerfanos.sh → el flag --limpiar.  
+- limpiar_huerfanos.sh → el atajo kyu-limpia.  
 - proyectar → se genera en ~/.local/bin/proyectar ([13]).  

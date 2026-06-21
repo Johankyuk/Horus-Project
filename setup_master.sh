@@ -3,17 +3,20 @@
 # Autor: Kyu
 # Descripcion: Setup maestro - CachyOS -> Kyu OS (Niri + Noctalia)
 #               Instala paquetes, despliega configs y aplica branding.
-# Uso:   bash setup_master.sh [opciones]
-# Flags: --skip-update   No corre 'pacman -Syu' al inicio (iteraciones rapidas)
-#        --dry-run       Solo reporta que instalaria/desplegaria; no toca nada
-#        --check         Healthcheck post-setup; valida estado y sale
-#        --capturar      Vuelca tu config activa (~/.config) al repo y sale
-#        --bateria=N     Límite de carga de batería en N% (default 80; 0 = off)
-#        --no-bateria    No configura el límite de carga
-#        --limpiar       Borra restos viejos (~/Imágenes/PFP|Wallpapers, log viejo del repo) y sale
-#        --solo=SECS     Corre SOLO esas secciones, separadas por coma; acepta
-#                        nombres o números (--solo=cursor · --solo=7,9).
-#                        --solo=lista muestra la tabla. Sin confirmación previa.
+# Uso:   La interfaz son los atajos kyu-* (se despliegan en la 1ª corrida y quedan
+#        en PATH). Cada atajo es este script con su modo:
+#          kyu-setup       corrida completa (muestra el plan y pide confirmación)
+#          kyu-dry         solo el plan, no toca nada
+#          kyu-check       healthcheck post-setup
+#          kyu-sync        vuelca tu ~/.config al repo (para commitear)
+#          kyu-solo SECS   corre solo esas secciones (kyu-solo lista para verlas;
+#                          por nombre o número: kyu-solo cursor · kyu-solo 7,9)
+#          kyu-limpia      borra restos de versiones viejas del setup
+#        La 1ª vez, sin atajos aún:  bash setup_master.sh
+# Avanzado (flags de uso puntual, sin atajo propio):
+#          --skip-update   no corre 'pacman -Syu' al inicio (iterar rápido)
+#          --bateria=N     límite de carga de batería en N% (default 80; 0 = off)
+#          --no-bateria    no configura el límite de carga
 # ============================================================
 #
 # Estructura esperada JUNTO a este script:
@@ -80,7 +83,21 @@ for arg in "$@"; do
         --limpiar)      DO_LIMPIAR=1 ;;
         --solo=*)       SOLO_RAW="${arg#*=}" ;;
         -h|--help)
-            grep -E '^# +(Uso|Flags|--[a-z])' "$0" | sed 's/^# //'; exit 0 ;;
+            cat <<'EOF'
+Kyu OS — setup maestro. Interfaz: atajos kyu-* (en PATH tras la 1ª corrida).
+  kyu-setup       corrida completa (muestra el plan y pide confirmación)
+  kyu-dry         solo el plan, no toca nada
+  kyu-check       healthcheck post-setup
+  kyu-sync        vuelca tu ~/.config al repo (para commitear)
+  kyu-solo SECS   corre solo esas secciones  (kyu-solo lista para verlas)
+  kyu-limpia      borra restos de versiones viejas del setup
+  kyu-update      actualiza mirrors + repos/AUR + flatpaks
+Avanzado (flags de uso puntual, sin atajo):
+  --skip-update   no corre 'pacman -Syu' (iterar rápido)
+  --bateria=N     límite de carga N% (default 80; 0 = off)
+  --no-bateria    no toca el límite de carga
+EOF
+            exit 0 ;;
         *) warn "Flag desconocido: $arg (ignorado)" ;;
     esac
 done
