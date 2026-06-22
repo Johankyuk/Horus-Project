@@ -381,7 +381,7 @@ mostrar_plan() {
 # REGISTRO DE SECCIONES (para el flujo normal y para --solo)
 # ============================================================
 # Orden canónico de ejecución. --solo acepta estos nombres o su número.
-SECCIONES=(snapshot update repos aur opcionales configs generables launcher gtk cursor sddm branding recursos proyeccion)
+SECCIONES=(snapshot update repos aur opcionales configs generables launcher gtk cursor sddm branding steam recursos proyeccion)
 declare -A SEC_DESC=(
     [snapshot]="Snapshot pre-setup"
     [update]="Actualizar sistema"
@@ -389,12 +389,13 @@ declare -A SEC_DESC=(
     [aur]="Paquetes AUR"
     [opcionales]="Apps opcionales"
     [configs]="Configs (Niri, Noctalia, Foot) + scripts"
-    [generables]="Generables (Noctalia scheme, fastfetch, Steam)"
+    [generables]="Generables (Noctalia scheme, fastfetch)"
     [launcher]="Limpieza del lanzador (ocultar no-apps)"
     [gtk]="GTK, iconos y Thunar"
     [cursor]="Cursor morado Bibata"
     [sddm]="SDDM Sugar-Dark"
     [branding]="Branding Kyu OS (systemd-boot)"
+    [steam]="Steam (wrapper anti-pantalla-negra del cliente)"
     [recursos]="Recursos + batería"
     [proyeccion]="Utilidad de proyección"
 )
@@ -403,11 +404,11 @@ declare -A SEC_DESC=(
 # privilegios); ídem con la red y con exigir paru/yay.
 # 'recursos' solo usa sudo para el servicio de batería: hereda DO_BATERIA.
 declare -A SEC_SUDO=( [snapshot]=1 [update]=1 [repos]=1 [aur]=1 [opcionales]=1
-    [configs]=1 [generables]=0 [launcher]=0 [gtk]=0 [cursor]=0 [sddm]=1 [branding]=1
+    [configs]=1 [generables]=0 [launcher]=0 [gtk]=0 [cursor]=0 [sddm]=1 [branding]=1 [steam]=1
     [recursos]=$DO_BATERIA [proyeccion]=0 )
 declare -A SEC_RED=(  [snapshot]=0 [update]=1 [repos]=1 [aur]=1 [opcionales]=1
     [configs]=0 [generables]=0 [launcher]=0 [gtk]=0 [cursor]=0 [sddm]=0 [branding]=0
-    [recursos]=0 [proyeccion]=0 )
+    [steam]=0 [recursos]=0 [proyeccion]=0 )
 
 _tabla_secciones() {
     local i=1 sec
@@ -1025,31 +1026,9 @@ else
     nota "config/noctalia/settings.json no está en el paquete; se omite."
 fi
 
-# --- Steam: fix ventana negra en Wayland (override de usuario) ---
-# Steam NO lo instala este script (va por el instalador de CachyOS). El override
-# .desktop con -cef-disable-gpu solo se escribe SI Steam ya está presente; sin él,
-# apuntaría a un binario inexistente. Si instalas Steam después, vuelve a correr:
-#   setup_master.sh --solo=generables   (aplica el parche sin tocar lo demás)
-if command -v steam &>/dev/null || pacman -Qq steam &>/dev/null; then
-    if write_if_changed "$HOME/.local/share/applications/steam.desktop" "Steam: override -cef-disable-gpu" << 'STEAM_EOF'
-[Desktop Entry]
-Name=Steam
-Comment=Steam (CEF GPU off - fix ventana negra en Wayland)
-Exec=steam -cef-disable-gpu %U
-Icon=steam
-Terminal=false
-Type=Application
-Categories=Network;FileTransfer;Game;
-MimeType=x-scheme-handler/steam;x-scheme-handler/steamlink;
-StartupWMClass=Steam
-Keywords=Valve;
-STEAM_EOF
-    then
-        update-desktop-database "$HOME/.local/share/applications" 2>/dev/null || true
-    fi
-else
-    skip "Steam no instalado; override omitido (instálalo y corre: setup_master.sh --solo=generables)."
-fi
+# --- Steam: el override .desktop y el wrapper anti-pantalla-negra se movieron a
+#     la sección «steam» (necesita sudo para /usr/local/bin; no encaja en esta
+#     sección sin privilegios). Ver sec_steam o: setup_master.sh --solo=steam
 
 # --- Fastfetch: logo ASCII morado + config ---
 mkdir -p "$HOME/.config/fastfetch"
@@ -1589,6 +1568,93 @@ KYUEOF
         fi
     else
         fallo "kyu-os-title falló; revisa /boot/loader/entries a mano."
+    fi
+fi
+}
+
+# ============================================================
+# SECCIÓN «steam» — FIX PANTALLA NEGRA DEL CLIENTE (CEF/Chromium)
+# ============================================================
+# Steam NO lo instala este script (va por el instalador de CachyOS); todo aquí
+# se aplica SOLO si Steam ya está presente. Si lo instalas después, corre:
+#   setup_master.sh --solo=steam
+#
+# El cliente Steam moderno es 100% CEF (Chromium): el proceso 'steamwebhelper'
+# dibuja TODA la ventana. En la iGPU Intel (Iris Xe / Tiger Lake) el proceso GPU
+# de Chromium se cae y la ventana queda EN NEGRO. El flag -cef-disable-gpu lo
+# evita, pero Steam es de INSTANCIA ÚNICA: el flag solo cuenta en el proceso que
+# arranca PRIMERO. Las llamadas posteriores ('steam steam://rungameid/...', que
+# es lo que lanzan los .desktop de los juegos) se reenvían por IPC a la instancia
+# viva y SUS flags se ignoran. Por eso, si arrancas un JUEGO en frío sin abrir
+# antes el cliente, Steam levanta SIN el flag, el CEF se rompe, y al abrir luego
+# el cliente sale negro.
+#
+# Fix de raíz: un wrapper en /usr/local/bin/steam (precede a /usr/bin en el PATH)
+# que ANTEPONE -cef-disable-gpu a CUALQUIER invocación de 'steam'. Da igual qué
+# .desktop arranque primero —cliente o juego—: el flag siempre está. Cubre además
+# los .desktop que Steam REGENERA solo (por eso es mejor que editar cada acceso a
+# mano), y pacman nunca toca /usr/local/bin, así que sobrevive a los updates del
+# paquete steam.
+sec_steam() {
+if ! command -v steam &>/dev/null && ! pacman -Qq steam &>/dev/null; then
+    skip "Steam no instalado; sección steam omitida (instálalo y corre: setup_master.sh --solo=steam)."
+else
+    # --- 1. Wrapper de sistema: -cef-disable-gpu en TODA invocación de steam ---
+    # Apunta SIEMPRE al binario real por ruta absoluta (/usr/bin/steam): si usara
+    # 'command -v steam' se hallaría a sí mismo y entraría en bucle infinito.
+    _wrap_tmp=$(mktemp)
+    cat > "$_wrap_tmp" <<'STEAMWRAP_EOF'
+#!/usr/bin/env bash
+# Wrapper de Steam para Kyu OS — antepone -cef-disable-gpu a toda invocación de
+# 'steam' para evitar el crash del proceso GPU de Chromium (CEF) en la iGPU Intel,
+# que deja el cliente EN NEGRO al arrancar en frío desde el .desktop de un juego.
+# Steam es de instancia única: basta con garantizar que SIEMPRE arranque con el
+# flag. Idempotente: si la llamada ya lo trae, no lo duplica.
+# Autor: Kyu
+REAL=/usr/bin/steam
+for a in "$@"; do
+    [ "$a" = "-cef-disable-gpu" ] && exec "$REAL" "$@"
+done
+exec "$REAL" -cef-disable-gpu "$@"
+STEAMWRAP_EOF
+    if [ ! -f /usr/local/bin/steam ] || ! cmp -s "$_wrap_tmp" /usr/local/bin/steam; then
+        [ -f /usr/local/bin/steam ] && sudo cp -a /usr/local/bin/steam "/usr/local/bin/steam.bak-$(date +%Y%m%d-%H%M%S)"
+        sudo install -m755 "$_wrap_tmp" /usr/local/bin/steam
+        hash -r 2>/dev/null || true
+        did "Wrapper /usr/local/bin/steam instalado (cliente arranca con CEF-GPU off)."
+    else
+        skip "Wrapper /usr/local/bin/steam ya estaba al día."
+    fi
+    rm -f "$_wrap_tmp"
+
+    # --- 2. PATH: el wrapper solo gana si /usr/local/bin precede a /usr/bin ---
+    # En CachyOS es el default (/etc/profile); se avisa si no se cumple en la
+    # sesión que corre el setup.
+    if ! printf '%s\n' "$PATH" | tr ':' '\n' | grep -qxF /usr/local/bin; then
+        nota "PATH no incluye /usr/local/bin: el wrapper no se usará hasta corregirlo."
+    elif [ "$(command -v steam)" != "/usr/local/bin/steam" ]; then
+        nota "/usr/bin/steam tiene prioridad sobre el wrapper en este PATH; revisa el orden en /etc/profile."
+    fi
+
+    # --- 3. Override .desktop del CLIENTE (defensa redundante) ---
+    # El wrapper ya cubre este caso; se mantiene por si una sesión rara no tuviera
+    # /usr/local/bin delante. El flag explícito aquí lo absorbe el wrapper sin
+    # duplicarlo. Solo toca $HOME (sin sudo).
+    if write_if_changed "$HOME/.local/share/applications/steam.desktop" "Steam: override -cef-disable-gpu (cliente)" << 'STEAM_EOF'
+[Desktop Entry]
+Name=Steam
+Comment=Steam (CEF GPU off - fix ventana negra en Wayland)
+Exec=steam -cef-disable-gpu %U
+Icon=steam
+Terminal=false
+Type=Application
+Categories=Network;FileTransfer;Game;
+MimeType=x-scheme-handler/steam;x-scheme-handler/steamlink;
+StartupWMClass=Steam
+Keywords=Valve;
+STEAM_EOF
+    then
+        update-desktop-database "$HOME/.local/share/applications" 2>/dev/null || true
     fi
 fi
 }
