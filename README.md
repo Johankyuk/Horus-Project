@@ -1,6 +1,8 @@
-# Kyu OS — Setup Master (CachyOS → Niri + Noctalia)
+# Kyu OS
 
-Script de restauración automática del sistema. Convierte una instalación base de **CachyOS** en un entorno **Kyu OS** completo: instala las apps, despliega tus dotfiles de Niri/Noctalia, aplica el tema morado **Horus**, el cursor, el login, el branding de arranque, configura Zen y deja la batería con límite de carga.
+**Beta 1.0**
+
+Entorno Linux personal, reproducible desde git, construido sobre **CachyOS**: compositor **Niri**, shell **Noctalia** e identidad visual morada (tema **Horus**). Un solo script convierte una instalación base en el sistema completo —apps, dotfiles, tema, cursor, login, branding de arranque, Zen y límite de batería— y lo deja idéntico en cualquier máquina.
 
 **Idioma / Language:** [Español](#español) · [English](#english)
 
@@ -18,13 +20,14 @@ bash <(curl -fsSL https://raw.githubusercontent.com/Johankyuk/kyu-os/main/bootst
 
 El bootstrap instala git, clona este repo en `~/kyu-os` y lanza el setup. Para clonar en otra ruta, exporta `KYU_OS_DIR=~/otra/ruta` antes. Si ya tienes el repo clonado, salta el bootstrap y corre `kyu-setup` directo.
 
-### Requisitos previos
+### Punto de partida
 
-- **CachyOS** instalado (base funcional, con systemd-boot como bootloader).
-- **AUR helper**: `paru` o `yay`. Necesario para instalar; los modos `kyu-sync`, `kyu-check` y `kyu-dry` no lo requieren.
-- **Conexión a internet** estable; se descargan bastantes paquetes.
-- Usuario con permisos **sudo**. El script pide la contraseña al inicio y la mantiene viva mientras corre.
-- **No** se corre como root: el script aborta si detecta `sudo bash …`.
+Pensado para correr **tras una instalación base de CachyOS** —mínima, sin entorno de escritorio, o ya con Niri instalado—. No necesitas un DE previo: el script instala todo lo demás. Solo asume:
+
+- **CachyOS** con systemd-boot como bootloader.
+- Un **AUR helper** (`paru` o `yay`) para instalar paquetes. Los modos `kyu-sync`, `kyu-check` y `kyu-dry` no lo requieren.
+- **Internet** estable y un usuario con **sudo** (se pide una vez al inicio y se mantiene viva durante la corrida).
+- No se corre como root: aborta si detecta `sudo bash …`.
 
 ### Estructura de archivos
 
@@ -168,13 +171,14 @@ bash <(curl -fsSL https://raw.githubusercontent.com/Johankyuk/kyu-os/main/bootst
 
 The bootstrap installs git, clones this repo into `~/kyu-os`, and launches the setup. To clone elsewhere, export `KYU_OS_DIR=~/other/path` first. If the repo is already cloned, skip the bootstrap and run `kyu-setup` directly.
 
-### Requirements
+### Starting point
 
-- **CachyOS** installed (working base, systemd-boot as bootloader).
-- **AUR helper**: `paru` or `yay`. Needed to install; the `kyu-sync`, `kyu-check`, and `kyu-dry` modes don't require it.
-- Stable **internet** connection; a fair number of packages are downloaded.
-- A user with **sudo**. The script asks once at the start and keeps it alive while running.
-- It does **not** run as root: the script aborts if it detects `sudo bash …`.
+Built to run **on top of a base CachyOS install** — minimal, with no desktop environment, or with Niri already in place. You don't need a prior DE: the script installs everything else. It only assumes:
+
+- **CachyOS** with systemd-boot as the bootloader.
+- An **AUR helper** (`paru` or `yay`) to install packages. The `kyu-sync`, `kyu-check`, and `kyu-dry` modes don't need it.
+- Stable **internet** and a user with **sudo** (asked once at the start, kept alive during the run).
+- It does not run as root: it aborts if it detects `sudo bash …`.
 
 ### File layout
 
