@@ -4,6 +4,8 @@
 
 Entorno Linux personal, reproducible desde git, construido sobre **CachyOS**: compositor **Niri**, shell **Noctalia** e identidad visual morada (tema **Horus**). Un solo script convierte una instalación base en el sistema completo —apps, dotfiles, tema, cursor, login, branding de arranque, Zen y límite de batería— y lo deja idéntico en cualquier máquina.
 
+> **Sobre la beta:** Kyu OS es un proyecto temprano, todavía en desarrollo. Lo construyo yo solo —soy un estudiante de 18 años— y me apoyo en IA para ciertas secciones. Espera cosas a medio pulir y cambios frecuentes; úsalo sabiendo eso.
+
 **Idioma / Language:** [Español](#español) · [English](#english)
 
 ---
@@ -160,6 +162,8 @@ Luego: instala `zen-browser-bin`, abre Zen una vez, `kyu-solo zen`, inicia sesi�
 ---
 
 ## English
+
+> **About the beta:** Kyu OS is an early, still-evolving project. I build it on my own —I'm an 18-year-old student— and I lean on AI for some parts. Expect rough edges and frequent changes; use it with that in mind.
 
 ### Quick install
 
