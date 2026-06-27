@@ -1,0 +1,254 @@
+#!/usr/bin/env python3
+# ============================================================
+# Autor: Kyu
+# kyu-tema — Aplica un tema de Kyu OS a todo el sistema.
+#   Fuente unica de color: kyu_temas.py. De ahi sale la paleta de
+#   cualquier tema y se propaga a Noctalia, foot, Niri y el wallpaper.
+#   Resuelve el doble rol de algunos hex (p.ej. #c44fe6 = secondary en
+#   Niri pero magenta-ANSI en la terminal) con reglas por-archivo.
+#
+#   Uso:
+#     kyu-tema <Tema>      aplica el tema (Morada, Azul rey, Rojo, Gris...)
+#     kyu-tema --lista     muestra los temas disponibles
+#     kyu-tema --actual    muestra el tema activo
+#
+#   Idempotente: solo escribe lo que cambia, respalda antes de tocar, y
+#   resume al final que se movio. No edita a mano: regenera desde el motor.
+# ============================================================
+import sys, os, re, json, shutil, subprocess, datetime
+
+# ── Localizar repo y motor (mismo criterio que kyu-setup) ────
+def _localizar_repo():
+    for c in (os.environ.get("KYU_OS_DIR"),
+              os.path.expanduser("~/.config/kyu-os/repo"),
+              os.path.expanduser("~/kyu-os")):
+        if c and os.path.isfile(os.path.join(c, "kyu_temas.py")):
+            return os.path.abspath(c)
+    # fallback: junto a este script
+    here = os.path.dirname(os.path.abspath(__file__))
+    for c in (here, os.path.dirname(here)):
+        if os.path.isfile(os.path.join(c, "kyu_temas.py")):
+            return c
+    sys.exit("[err] No encuentro kyu_temas.py (define KYU_OS_DIR).")
+
+REPO = _localizar_repo()
+sys.path.insert(0, REPO)
+import kyu_temas as kt
+
+HOME     = os.path.expanduser("~")
+CFG      = os.path.join(HOME, ".config")
+REPO_CFG = os.path.join(REPO, "config")   # fuente Morada: SIEMPRE se parte de aqui
+STATE   = os.path.join(CFG, "kyu-os", "tema")
+BK_ROOT = os.path.join(HOME, ".cache", "kyu-os", "tema-backups")
+SVG_BASE = os.path.join(REPO, "Wallpapers", "base.svg")
+WALL_DIR = os.path.join(REPO, "Wallpapers")
+
+# Conjuntos de color con doble rol — se anclan por-archivo.
+ANSI_FIJOS = {v.lstrip('#').lower() for v in kt.ANSI_FIJOS.values()}  # red/green/.../bright
+NIRI_ROTAN = ["8b45f7", "4a2a82", "c44fe6"]   # decorativos; urgent (fb5c7e) queda fijo
+
+C = {"ok": "\033[92m", "warn": "\033[93m", "p": "\033[95m", "n": "\033[0m"}
+def did(m):  print(f"{C['ok']}[+]{C['n']} {m}")
+def skip(m): print(f"{C['p']}[=]{C['n']} {m}")
+def warn(m): print(f"{C['warn']}[i]{C['n']} {m}")
+
+_CAMBIOS = [False]
+def _backup(path, ts):
+    if os.path.exists(path):
+        rel = os.path.relpath(path, HOME)
+        dst = os.path.join(BK_ROOT, ts, rel)
+        os.makedirs(os.path.dirname(dst), exist_ok=True)
+        shutil.copy2(path, dst)
+
+def _escribe_si_cambia(path, contenido, etiqueta, ts):
+    if os.path.isfile(path) and open(path, encoding="utf-8").read() == contenido:
+        skip(f"{etiqueta}: ya estaba al dia."); return
+    _backup(path, ts)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(contenido)
+    did(etiqueta); _CAMBIOS[0] = True
+
+def _sub_hex(texto, rotar_pred, tema):
+    """Reemplaza cada hex de 6 chars segun rotar_pred(hex_lower)->bool."""
+    def r(m):
+        h = m.group(0).lower()
+        return kt.rotar_hex("#" + h, tema).lstrip("#") if rotar_pred(h) else m.group(0)
+    return re.sub(r'(?<![0-9a-fA-F])[0-9a-fA-F]{6}(?![0-9a-fA-F])', r, texto)
+
+# ── 1) Colorscheme de Noctalia (dark) generado desde roles ───
+def gen_colorscheme(tema, ts):
+    p = kt.construir(tema)
+    On = p["mOnPrimary"]; OnS = p["mOnSurface"]
+    dark = {
+        "mPrimary": p["mPrimary"], "mOnPrimary": On,
+        "mSecondary": p["mSecondary"], "mOnSecondary": On,
+        "mTertiary": p["mTertiary"], "mOnTertiary": On,
+        "mError": p["mError"], "mOnError": On,
+        "mSurface": p["mSurface"], "mOnSurface": OnS,
+        "mSurfaceVariant": p["mSurfaceVariant"], "mOnSurfaceVariant": p["mOnSurfaceVariant"],
+        "mOutline": p["mOutline"], "mShadow": p["mShadow"],
+        "mHover": p["mHover"], "mOnHover": OnS,
+        "terminal": {
+            "foreground": p["termFg"], "background": p["termBg"],
+            "selectionFg": p["termSelFg"], "selectionBg": p["termSelBg"],
+            "cursorText": p["termBg"], "cursor": p["termCursor"],
+            "normal": {"black": p["black"], "red": p["red"], "green": p["green"],
+                       "yellow": p["yellow"], "blue": p["blue"], "magenta": p["magenta"],
+                       "cyan": p["cyan"], "white": p["white"]},
+            "bright": {"black": p["blackBright"], "red": p["redBright"], "green": p["greenBright"],
+                       "yellow": p["yellowBright"], "blue": p["blueBright"], "magenta": p["magentaBright"],
+                       "cyan": p["cyanBright"], "white": p["whiteBright"]},
+        },
+    }
+    # El modo claro se rota en el siguiente bloque; por ahora se preserva el del repo.
+    dst = os.path.join(CFG, "noctalia", "colorschemes", "Kyu OS", "Kyu OS.json")
+    base = {"dark": dark, "light": {}}
+    if os.path.isfile(dst):
+        try: base["light"] = json.load(open(dst)).get("light", {})
+        except Exception: pass
+    _escribe_si_cambia(dst, json.dumps(base, indent=2, ensure_ascii=False) + "\n",
+                       f"Colorscheme Noctalia -> {tema}", ts)
+
+# ── 2) foot: parchea colores (ANSI semanticos quedan fijos) ──
+def gen_foot(tema, ts):
+    src = os.path.join(REPO_CFG, "foot", "foot.ini")      # fuente Morada
+    dst = os.path.join(CFG, "foot", "foot.ini")
+    if not os.path.isfile(src):
+        warn("foot.ini (repo) no encontrado; se omite."); return
+    txt = open(src, encoding="utf-8").read()
+    out = _sub_hex(txt, lambda h: h not in ANSI_FIJOS, tema)
+    _escribe_si_cambia(dst, out, f"foot.ini -> {tema}", ts)
+
+# ── 3) Niri: parchea solo los decorativos (urgent queda rojo) ─
+def patch_niri(tema, ts):
+    src = os.path.join(REPO_CFG, "niri", "cfg", "layout.kdl")  # fuente Morada
+    dst = os.path.join(CFG, "niri", "cfg", "layout.kdl")
+    if not os.path.isfile(src):
+        warn("layout.kdl (repo) no encontrado; se omite."); return
+    txt = open(src, encoding="utf-8").read()
+    out = _sub_hex(txt, lambda h: h in NIRI_ROTAN, tema)
+    _escribe_si_cambia(dst, out, f"Niri layout.kdl -> {tema}", ts)
+
+# ── 4) Wallpaper: genera SVG del tema y lo rasteriza a PNG ────
+def gen_wallpaper(tema, ts):
+    if not os.path.isfile(SVG_BASE):
+        warn(f"No hay {SVG_BASE}; wallpaper omitido."); return None
+    plantilla = open(SVG_BASE, encoding="utf-8").read()
+    svg = plantilla
+    for hexo, rol in kt.WALLPAPER.items():
+        svg = re.sub(re.escape(hexo), kt.construir(tema)[rol], svg, flags=re.IGNORECASE)
+    slug = tema.lower().replace(" ", "_")
+    svg_out = os.path.join(WALL_DIR, f"kyu_{slug}.svg")
+    png_out = os.path.join(WALL_DIR, f"kyu_{slug}.png")
+    _escribe_si_cambia(svg_out, svg, f"Wallpaper SVG -> {tema}", ts)
+    # rasterizar (magick ya esta en el sistema por el tema de cursor)
+    if shutil.which("magick"):
+        subprocess.run(["magick", "-background", "none", svg_out,
+                        "-resize", "3840x2160", png_out], check=False)
+        did(f"Wallpaper PNG 4K -> {png_out}")
+    else:
+        warn("magick no disponible; quedo solo el SVG.")
+    return png_out
+
+def save_state(tema):
+    os.makedirs(os.path.dirname(STATE), exist_ok=True)
+    open(STATE, "w").write(tema + "\n")
+
+# ── 5) Wallpaper activo: apunta Noctalia al PNG del tema ──────
+def set_wallpaper_activo(png, ts):
+    dst = os.path.join(CFG, "noctalia", "settings.json")
+    if not png or not os.path.isfile(dst):
+        warn("settings.json de Noctalia no hallado; wallpaper no apuntado."); return
+    txt = open(dst, encoding="utf-8").read()
+    # reemplaza el valor de cada "path" del wallpaper (los únicos con /Wallpapers/)
+    out = re.sub(r'("path"\s*:\s*")[^"]*Wallpapers/[^"]*(")',
+                 lambda m: m.group(1) + png + m.group(2), txt)
+    _escribe_si_cambia(dst, out, f"Wallpaper activo (Noctalia) -> {os.path.basename(png)}", ts)
+
+# ── 6) SDDM: MainColor/AccentColor (requiere root; best-effort) ─
+def patch_sddm(tema, ts):
+    src = os.path.join(REPO, "sugar-dark-kyu", "theme.conf")   # fuente Morada
+    dst = "/usr/share/sddm/themes/sugar-dark-kyu/theme.conf"
+    if not os.path.isfile(src):
+        warn("theme.conf SDDM (repo) no hallado; SDDM sin recolorear."); return
+    out = _sub_hex(open(src, encoding="utf-8").read(), lambda h: True, tema)  # ambos colores rotan
+    try:
+        actual = subprocess.run(["sudo", "-n", "cat", dst], capture_output=True, text=True)
+    except Exception:
+        actual = None
+    if actual is not None and actual.returncode == 0 and actual.stdout == out:
+        skip(f"SDDM theme.conf ya en '{tema}'."); return
+    if subprocess.run(["sudo", "-n", "true"], capture_output=True).returncode != 0:
+        warn("SDDM omitido: necesita root. Corre 'sudo kyu-tema' o aplícalo en el setup."); return
+    r = subprocess.run(["sudo", "tee", dst], input=out, text=True, capture_output=True)
+    if r.returncode == 0:
+        did(f"SDDM theme.conf -> {tema}"); _CAMBIOS[0] = True
+    else:
+        warn("No se pudo escribir el theme.conf de SDDM.")
+
+def reload_hot():
+    # Recargas en caliente de lo que se puede sin re-loguear.
+    if shutil.which("niri"):
+        subprocess.run(["niri", "msg", "action", "load-config-file"], check=False)
+    subprocess.run(["pkill", "-USR1", "foot"], check=False)  # foot relee colores con SIGUSR1
+
+def aplicar(tema):
+    if tema not in kt.lista_temas():
+        sys.exit(f"[err] Tema desconocido: {tema}\n       Disponibles: {', '.join(kt.lista_temas())}")
+    ts = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    print(f"{C['p']}Aplicando tema: {tema}{C['n']}  (repo: {REPO})")
+    # ── Targets activos del tema ──────────────────────────────
+    # Por decisión de Kyu, el tema toca SOLO Niri (+ cursor y GTK/Thunar,
+    # que se agregan abajo). El wallpaper se gestiona aparte. Las funciones
+    # gen_colorscheme/gen_foot/set_wallpaper_activo/patch_sddm siguen en el
+    # archivo por si se quieren reactivar, pero NO se llaman.
+    patch_niri(tema, ts)
+    # patch_cursor(tema, ts)   # (pendiente) recolorea el tema de cursor
+    # patch_gtk(tema, ts)      # (pendiente) carpetas de Thunar / acento GTK
+    save_state(tema)
+    if _CAMBIOS[0]:
+        reload_hot()
+        did(f"Tema '{tema}' aplicado (Niri). Respaldo: {os.path.join(BK_ROOT, ts)}")
+    else:
+        skip(f"Todo ya estaba en '{tema}'. Sin cambios.")
+
+def _elegir():
+    """Selector interactivo: lista los temas numerados y aplica el elegido."""
+    temas = kt.lista_temas()
+    cur = open(STATE).read().strip() if os.path.isfile(STATE) else None
+    def e(s=""): print(s, file=sys.stderr)
+    while True:
+        e(f"{C['p']}╭─ Tema de Kyu OS ─╮{C['n']}")
+        for i, t in enumerate(temas, 1):
+            marca = f" {C['ok']}(actual){C['n']}" if t == cur else ""
+            e(f"  {C['ok']}{i:>2}{C['n']}) {t}{marca}")
+        print("  > ", end="", file=sys.stderr, flush=True)
+        try:
+            r = input().strip()
+        except (EOFError, KeyboardInterrupt):
+            e("\nCancelado."); return
+        if r.isdigit() and 1 <= int(r) <= len(temas):
+            aplicar(temas[int(r) - 1]); return
+        if r in temas:
+            aplicar(r); return
+        e(f"  {C['warn']}Opcion no valida.{C['n']}")
+
+def main():
+    a = sys.argv[1:]
+    if not a or a[0] in ("-h", "--help"):
+        print("uso: kyu-tema <Tema> | --elegir | --lista | --actual"); return
+    if a[0] == "--elegir":
+        _elegir(); return
+    if a[0] == "--lista":
+        cur = open(STATE).read().strip() if os.path.isfile(STATE) else "(ninguno)"
+        for t in kt.lista_temas():
+            print(f"  {'* ' if t == cur else '  '}{t}")
+        return
+    if a[0] == "--actual":
+        print(open(STATE).read().strip() if os.path.isfile(STATE) else "(ninguno)")
+        return
+    aplicar(" ".join(a))
+
+if __name__ == "__main__":
+    main()
