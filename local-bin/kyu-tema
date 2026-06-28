@@ -50,7 +50,9 @@ def _resolver_tema(entrada):
     for t in kt.lista_temas():
         if _norm(t) == objetivo:
             return t
-    return None
+    # Compat: nombres viejos -> nuevos (estado guardado, scripts, typos previos).
+    alias = {"morada": "Morado"}
+    return alias.get(objetivo)
 
 def _hex_rgb(h):
     h = h.lstrip("#")
