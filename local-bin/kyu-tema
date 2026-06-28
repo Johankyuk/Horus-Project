@@ -52,6 +52,15 @@ def _resolver_tema(entrada):
             return t
     return None
 
+def _hex_rgb(h):
+    h = h.lstrip("#")
+    return int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
+
+def _swatch(hexc):
+    """Bloque de color truecolor para el selector (muestra el primary real)."""
+    r, g, b = _hex_rgb(hexc)
+    return f"\033[48;2;{r};{g};{b}m    \033[0m"
+
 HOME     = os.path.expanduser("~")
 CFG      = os.path.join(HOME, ".config")
 REPO_CFG = os.path.join(REPO, "config")   # fuente Morada: SIEMPRE se parte de aqui
@@ -259,8 +268,9 @@ def _elegir():
     while True:
         e(f"{C['p']}╭─ Tema de Kyu OS ─╮{C['n']}")
         for i, t in enumerate(temas, 1):
+            sw = _swatch(kt.construir(t)["mPrimary"])
             marca = f" {C['ok']}(actual){C['n']}" if t == cur else ""
-            e(f"  {C['ok']}{i:>2}{C['n']}) {t}{marca}")
+            e(f"  {C['ok']}{i:>2}{C['n']}) {sw}  {t}{marca}")
         print("  > ", end="", file=sys.stderr, flush=True)
         try:
             r = input().strip()
