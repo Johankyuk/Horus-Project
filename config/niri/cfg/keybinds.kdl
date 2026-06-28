@@ -15,10 +15,10 @@ binds {
     // ─── Teclas de vendor (Armoury / Omen / etc.) ───
     // En la TUF A16: la tecla F4 (Aura) emite el keysym F4, y la tecla M4
     // (Armoury, arriba de la fila F) emite XF86Launch4.
-    //   M4 (Armoury)  -> XF86Launch4  -> abre el centro de control de Noctalia
-    //   F4 (Aura)     -> F4           -> libre (irá a ciclar efectos del teclado)
-    // Para otras marcas (HP Omen/Victus, etc.) descubre su keysym con
-    //   wev -f wl_keyboard:key   y átalo a la MISMA acción de abajo.
+    //   F4 (Aura)         -> cicla los efectos del teclado (kyu-kbd-fx)
+    //   Fn+F4             -> XF86Launch4 -> abre el centro de control de Noctalia
+    // (M4/Armoury no llega a Linux; lo consume el firmware.)
+    F4                                  hotkey-overlay-title="Teclado: ciclar efecto" { spawn-sh "kyu-kbd-fx --next"; }
     XF86Launch4                         hotkey-overlay-title="Centro de control: Noctalia" { spawn-sh "qs -c noctalia-shell ipc call controlCenter toggle"; }
 
     // ─── Media Controls ───
