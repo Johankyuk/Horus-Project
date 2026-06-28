@@ -193,6 +193,24 @@ def reload_hot():
         subprocess.run(["niri", "msg", "action", "load-config-file"], check=False)
     subprocess.run(["pkill", "-USR1", "foot"], check=False)  # foot relee colores con SIGUSR1
 
+
+# ── 7) Teclado RGB (ITE5570 LampArray): color = primary del tema ──
+def patch_kbd(tema, ts):
+    color = kt.rotar_hex(kt.MORADA["mPrimary"], tema).lstrip("#")
+    kbd_state = os.path.join(CFG, "kyu-os", "kbd-color")  # lo lee el autostart
+    actual = open(kbd_state).read().strip() if os.path.isfile(kbd_state) else None
+    if actual == color:
+        skip(f"Teclado RGB: ya en #{color}."); return
+    if not shutil.which("kyu-kbd-color"):
+        warn("kyu-kbd-color no está en PATH; teclado sin recolorear."); return
+    r = subprocess.run(["kyu-kbd-color", color], capture_output=True, text=True)
+    if r.returncode == 0:
+        os.makedirs(os.path.dirname(kbd_state), exist_ok=True)
+        open(kbd_state, "w").write(color + "\n")
+        did(f"Teclado RGB -> #{color}"); _CAMBIOS[0] = True
+    else:
+        warn(f"Teclado RGB no aplicado: {r.stderr.strip() or 'fallo kyu-kbd-color'}")
+
 def aplicar(tema):
     if tema not in kt.lista_temas():
         sys.exit(f"[err] Tema desconocido: {tema}\n       Disponibles: {', '.join(kt.lista_temas())}")
@@ -204,6 +222,7 @@ def aplicar(tema):
     # gen_colorscheme/gen_foot/set_wallpaper_activo/patch_sddm siguen en el
     # archivo por si se quieren reactivar, pero NO se llaman.
     patch_niri(tema, ts)
+    patch_kbd(tema, ts)        # ← teclado RGB sigue el primary del tema
     # patch_cursor(tema, ts)   # (pendiente) recolorea el tema de cursor
     # patch_gtk(tema, ts)      # (pendiente) carpetas de Thunar / acento GTK
     save_state(tema)
