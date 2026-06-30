@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 # OSD del brillo del teclado (wob), con la barra en el color del TEMA activo.
-# Autor: Kyu
 #
 # La barra usa el primary del tema —el mismo color del LED del teclado—. La
 # fuente es ~/.config/kyu-os/kbd-color, que kyu-tema reescribe en cada cambio

@@ -1,6 +1,4 @@
 #!/usr/bin/env python3
-# ============================================================
-# Autor: Kyu
 # kyu-kbd-fx — efectos del teclado por software sobre LampArray (ITE5570).
 #
 # asusctl aura no soporta efectos en este equipo (FA607NUG), así que se animan
@@ -16,7 +14,6 @@
 # Color base (tema): ~/.config/kyu-os/kbd-color  (lo escribe kyu-tema)
 # En 'estatico' el LED = color del tema; respiracion/pulso/strobe usan ese color;
 # arcoiris cicla el tono. Reemplaza a kyu-kbd-restore (también hace el estático).
-# ============================================================
 import sys, os, fcntl, glob, time, math, colorsys
 
 MODES = ["estatico", "respiracion", "arcoiris", "pulso", "strobe"]

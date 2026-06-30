@@ -1,6 +1,4 @@
 #!/usr/bin/env bash
-# ============================================================
-# Autor: Kyu
 # kyu-power-hook — aplica el power-limit de la dGPU según el perfil de energía.
 #
 # Corre como servicio root y vigila /sys/firmware/acpi/platform_profile (lo que
@@ -12,7 +10,6 @@
 # perfil al cambiar. Esto solo cubre lo único que no sigue al perfil: el -pl de
 # la dGPU. (El modo dGPU-apagada de "ahorro real" sigue siendo manual con
 # `kyu-power ahorro`, porque cambiar el modo de GPU cierra sesión.)
-# ============================================================
 set -uo pipefail
 
 PROF_FILE=/sys/firmware/acpi/platform_profile

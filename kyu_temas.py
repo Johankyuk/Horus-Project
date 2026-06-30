@@ -1,6 +1,4 @@
 #!/usr/bin/env python3
-# ============================================================
-# Autor: Johan Kyu Kim Espinosa
 # kyu_temas.py — Motor de temas de Kyu OS  (v2)
 #   Genera familias de tema rotando el TONO de la paleta base "Morada"
 #   en espacio OKLCH (conserva luz y croma de cada color), con tres
@@ -16,7 +14,6 @@
 #        (profundo) o "Rosa brillante" vs "Rosa palido" (desaturado).
 #   Fuente unica de color: de aqui salen los valores para Noctalia, foot,
 #   Niri, SDDM, cursor, fastfetch y el wallpaper SVG. Sin dependencias.
-# ============================================================
 import math, json
 
 # ── OKLab / OKLCH (sin dependencias) ─────────────────────────
@@ -69,24 +66,24 @@ def _rot(hexc, dh, gray=False, dL=0.0, fC=1.0):
 
 # ── Paleta base MORADA (lo que hoy vive en setup_master.sh) ───
 MORADA = {
-    "mPrimary": "#8b45f7", "mOnPrimary": "#18092b",
-    "mSecondary": "#c44fe6", "mTertiary": "#e85fb0", "mError": "#fb5c7e",
-    "mSurface": "#18092b", "mOnSurface": "#b88cf2",
-    "mSurfaceVariant": "#261146", "mOnSurfaceVariant": "#a784dd",
-    "mOutline": "#5031a0", "mShadow": "#0c0520", "mHover": "#381a5e",
-    "termFg": "#ede6ff", "termBg": "#1c0e33",
-    "termSelFg": "#b88cf2", "termSelBg": "#5031a0", "termCursor": "#8b45f7",
+    "mPrimary": "#7a2be8", "mOnPrimary": "#140622",
+    "mSecondary": "#b340e0", "mTertiary": "#df54a6", "mError": "#f5567a",
+    "mSurface": "#140622", "mOnSurface": "#a872f2",
+    "mSurfaceVariant": "#1e0c3a", "mOnSurfaceVariant": "#9568d8",
+    "mOutline": "#482a92", "mShadow": "#070210", "mHover": "#2a1350",
+    "termFg": "#e8dcff", "termBg": "#160a28",
+    "termSelFg": "#a872f2", "termSelBg": "#482a92", "termCursor": "#7a2be8",
 }
 # Correccion 2: tonos ANSI semanticos anclados (NO rotan en ningun tema).
 # Solo black/white (neutros) se tintan por tema.
 ANSI_FIJOS = {
-    "red": "#fb5c7e", "green": "#5ee6a0", "yellow": "#f5c453",
-    "blue": "#8b7dff", "magenta": "#c44fe6", "cyan": "#5fd6e0",
+    "red": "#f5567a", "green": "#5ee6a0", "yellow": "#f5c453",
+    "blue": "#7d6ff5", "magenta": "#b340e0", "cyan": "#5fd6e0",
     "redBright": "#ff7492", "greenBright": "#74f0b0", "yellowBright": "#ffd56a",
-    "blueBright": "#a99cff", "magentaBright": "#da6ff0", "cyanBright": "#7fe4ec",
+    "blueBright": "#9a8cf5", "magentaBright": "#cb52ec", "cyanBright": "#7fe4ec",
 }
-ANSI_NEUTROS = {"black": "#381a5e", "white": "#a784dd",
-                "blackBright": "#5031a0", "whiteBright": "#b88cf2"}
+ANSI_NEUTROS = {"black": "#2a1350", "white": "#9568d8",
+                "blackBright": "#482a92", "whiteBright": "#a872f2"}
 
 # ── Mini-paleta del WALLPAPER SVG (horus_wallpaper2.svg) ──────
 # Rampa de luz del primary (cielo + 6 capas de montaña) + glow calido.
@@ -101,7 +98,7 @@ WALLPAPER = {
 # El tono del color central define el Δrotacion. Δluz y croma afinan la
 # variante. Agregar/ajustar un tema = 1 linea.
 TEMAS = {
-    "Morado":          ("#8b45f7", -0.11, 1.00),  # base, oscurecido para IPS (no lavanda)
+    "Morado":          ("#7a2be8", 0.00, 1.00),  # base violeta (oscurecido ya horneado en MORADA)
     "Azul electrico":  ("#1e90ff", 0.05, 1.06),  # claro, vivo, cyan-ish
     "Azul rey":        ("#3538cd", -0.03, 1.02),  # profundo, hacia indigo
     "Rosa brillante":  ("#ff2e9a", 0.00, 1.06),  # hot pink saturado

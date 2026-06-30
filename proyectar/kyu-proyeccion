@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 # kyu-proyeccion — Toggle entre modo espejo (duplicado) y extendido en niri.
 # Usable siempre, con o sin segundo monitor conectado: nunca falla.
-# Autor: Johan Kyu Kim Espinosa
 # Deps: wl-mirror, jq, niri, libnotify
 
 set -euo pipefail

@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# Autor: Kyu
 # Genera el wallpaper SVG temático para cada tema, rotando los colores
 # de la mini-paleta del wallpaper con el motor kyu_temas (misma rotación
 # que la UI). Uso: python3 kyu_wallpaper.py base.svg salida_dir/

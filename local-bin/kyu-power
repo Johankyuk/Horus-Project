@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
-# ============================================================
-# Autor: Kyu
 # kyu-power — energía + ventiladores + GPU de Kyu OS, unificado.
 #
-#   kyu-power setup        define las curvas de los 3 perfiles en asusd y habilita
-#                          el hook de power-limit (correr una vez; el setup_master
-#                          lo hace solo en máquinas con dGPU).
+#   kyu-power setup        define las curvas de los 3 perfiles en asusd, habilita el
+#                          hook de power-limit y configura la GPU cómoda: compositor
+#                          en la iGPU + autosuspensión de la dGPU (correr una vez; el
+#                          setup_master lo hace solo en máquinas con dGPU).
 #   kyu-power eco          perfil quiet  (silencioso). El hook capa la dGPU bajo.
 #   kyu-power equilibrado  perfil balanced (uso ligero de ventilador, dGPU limitada).
 #   kyu-power rendimiento  perfil performance (curva algo agresiva, dGPU a tope seguro).
-#   kyu-power gpu-off      apaga la dGPU (supergfxctl Integrated, usa la iGPU). CIERRA SESIÓN.
+#   kyu-power gpu-off      apaga la dGPU del todo (Integrated). CIERRA SESIÓN. Con la GPU
+#                          cómoda ya casi no hace falta: la dGPU se duerme sola en Hybrid.
 #   kyu-power gpu-on       dGPU on-demand (supergfxctl Hybrid). CIERRA SESIÓN.
 #   kyu-power noheat       ventiladores al 100% (SOLO en rendimiento + conectado a AC).
 #   kyu-power noheat off   restaura la curva agresiva de rendimiento.
@@ -20,7 +20,6 @@
 #   - power-limit dGPU -> lo aplica kyu-power-hook (servicio) según el perfil.
 #   - apagar la dGPU de verdad (eco real, frío y silencioso) -> gpu-off, manual,
 #     porque cambiar el modo de GPU cierra sesión.
-# ============================================================
 set -uo pipefail
 P='\033[0;35m'; G='\033[0;32m'; Y='\033[1;33m'; R='\033[0;31m'; N='\033[0m'
 log(){ echo -e "${P}[power]${N} $1"; }; ok(){ echo -e "${G}[+]${N} $1"; }
@@ -62,6 +61,54 @@ _modo_gpu(){ # $1 = Integrated | Hybrid
 _en_ac(){ for p in /sys/class/power_supply/*/online; do
         [ -r "$p" ] && [ "$(cat "$p" 2>/dev/null)" = "1" ] && return 0; done; return 1; }
 
+# ── GPU cómoda: compositor en iGPU + dGPU que se autosuspende ──
+# Apunta el render del compositor a la iGPU para que la dGPU pueda dormir
+# (D3cold) sin cerrar sesión. Inyecta dentro del bloque debug{} de Niri.
+_render_igpu(){
+    local misc="$HOME/.config/niri/cfg/misc.kdl"
+    [ -f "$misc" ] || { warn "No hay $misc; me salto el render-device de Niri."; return 0; }
+    grep -q 'render-drm-device' "$misc" && { ok "Compositor ya tiene render-device fijado."; return 0; }
+    local node="" d rn drv
+    for d in /dev/dri/by-path/*-render; do
+        [ -e "$d" ] || continue
+        rn=$(basename "$(readlink -f "$d")")
+        drv=$(basename "$(readlink -f "/sys/class/drm/$rn/device/driver")" 2>/dev/null || true)
+        case "$drv" in amdgpu|i915|xe) node="$d"; break ;; esac
+    done
+    [ -z "$node" ] && { warn "No detecté la iGPU; me salto el render-device."; return 0; }
+    cp "$misc" "$misc.kyubak" 2>/dev/null
+    if grep -q 'debug {' "$misc"; then
+        sed -i "0,/debug {/ s|debug {|debug {\n        render-drm-device \"$node\"|" "$misc"
+    else
+        printf '\n    debug {\n        render-drm-device "%s"\n    }\n' "$node" >> "$misc"
+    fi
+    ok "Compositor -> iGPU ($node). Aplica al reiniciar la sesión. Revertir: borra esa línea de $misc"
+}
+
+# dGPU se apaga sola (D3cold) cuando nada la usa, sin cerrar sesión.
+_gpu_comoda(){
+    sudo install -Dm644 /dev/stdin /etc/modprobe.d/kyu-nvidia-pm.conf <<'EOF'
+# Kyu OS — autosuspensión de la dGPU (PRIME dynamic power management).
+options nvidia NVreg_DynamicPowerManagement=0x02
+EOF
+    sudo install -Dm644 /dev/stdin /etc/udev/rules.d/80-kyu-nvidia-pm.rules <<'EOF'
+# Kyu OS — runtime PM de la dGPU NVIDIA (controlador VGA + audio/usb del paquete).
+ACTION=="bind",   SUBSYSTEM=="pci", DRIVERS=="nvidia", ATTR{class}=="0x030000", TEST=="power/control", ATTR{power/control}="auto"
+ACTION=="bind",   SUBSYSTEM=="pci", DRIVERS=="nvidia", ATTR{class}=="0x030200", TEST=="power/control", ATTR{power/control}="auto"
+ACTION=="unbind", SUBSYSTEM=="pci", DRIVERS=="nvidia", ATTR{class}=="0x030000", TEST=="power/control", ATTR{power/control}="on"
+ACTION=="unbind", SUBSYSTEM=="pci", DRIVERS=="nvidia", ATTR{class}=="0x030200", TEST=="power/control", ATTR{power/control}="on"
+EOF
+    ok "dGPU configurada para autosuspenderse (D3cold) cuando esté ociosa."
+    # nvidia suele ir en el initramfs (KMS temprano): hay que regenerarlo.
+    if command -v mkinitcpio &>/dev/null; then
+        sudo mkinitcpio -P &>/dev/null && ok "initramfs regenerado." || warn "No se pudo regenerar el initramfs (hazlo a mano: sudo mkinitcpio -P)."
+    fi
+    _render_igpu
+    local m; m=$(supergfxctl -g 2>/dev/null || echo '?')
+    [ "$m" = Hybrid ] || warn "La GPU debe estar en Hybrid para esto (ahora: $m). Cámbiala con: kyu-power gpu-on"
+    warn "Reinicia para aplicar. Juegos: 'prime-run %command%' en opciones de lanzamiento de Steam."
+}
+
 case "${1:-}" in
     setup)
         _curva quiet       "$CURVA_QUIET"
@@ -72,6 +119,11 @@ case "${1:-}" in
             sudo systemctl enable --now kyu-power-hook && ok "Hook de power-limit habilitado."
         else
             warn "kyu-power-hook.service no instalado aún (lo pone el setup_master/sección GPU)."
+        fi
+        # GPU cómoda estilo Windows (solo con dGPU NVIDIA): la dGPU duerme sola
+        # cuando nada la usa, sin cerrar sesión; los juegos la despiertan con prime-run.
+        if lspci 2>/dev/null | grep -qi 'nvidia'; then
+            _gpu_comoda
         fi
         ;;
     eco|ahorro)          _perfil power-saver ;;

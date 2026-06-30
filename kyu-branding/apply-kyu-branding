@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# Autor: Kyu
 # Aplica el branding de Kyu OS sobre los archivos que el paquete
 # 'filesystem' restaura en cada actualización.
 set -euo pipefail

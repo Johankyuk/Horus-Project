@@ -1,6 +1,4 @@
 #!/bin/bash
-# ============================================================
-# Autor: Kyu
 # Descripcion: Setup maestro - CachyOS -> Kyu OS (Niri + Noctalia)
 #               Instala paquetes, despliega configs y aplica branding.
 # Uso:   La interfaz son los atajos kyu-* (se despliegan en la 1ª corrida y quedan
@@ -17,7 +15,6 @@
 #          --skip-update   no corre 'pacman -Syu' al inicio (iterar rápido)
 #          --bateria=N     límite de carga de batería en N% (default 80; 0 = off)
 #          --no-bateria    no configura el límite de carga
-# ============================================================
 #
 # Estructura esperada JUNTO a este script:
 #   setup_master.sh
@@ -71,11 +68,12 @@ KYU_SETUP_PREVIO=0
 [ -f "$HOME/.local/bin/kyu-setup" ] && KYU_SETUP_PREVIO=1
 
 # ── Flags ────────────────────────────────────────────────────
-SKIP_UPDATE=0; DRY_RUN=0; DO_CHECK=0; DO_BATERIA=1; BAT_LIMIT=80; DO_CAPTURAR=0; DO_LIMPIAR=0; SOLO_RAW=""
+SKIP_UPDATE=0; DRY_RUN=0; DO_CHECK=0; DO_BATERIA=1; BAT_LIMIT=80; DO_CAPTURAR=0; DO_LIMPIAR=0; SOLO_RAW=""; KYU_PREVIEW=0
 for arg in "$@"; do
     case "$arg" in
         --skip-update)  SKIP_UPDATE=1 ;;
         --dry-run)      DRY_RUN=1 ;;
+        --preview)      KYU_PREVIEW=1 ;;
         --check)        DO_CHECK=1 ;;
         --capturar)     DO_CAPTURAR=1 ;;
         --no-bateria)   DO_BATERIA=0 ;;
@@ -93,6 +91,7 @@ Kyu OS — setup maestro. Interfaz: atajos kyu-* (en PATH tras la 1ª corrida).
   kyu-limpia      borra restos de versiones viejas del setup
   kyu-update      actualiza mirrors + repos/AUR + flatpaks
 Avanzado (flags de uso puntual, sin atajo):
+  --preview       muestra el asistente gum SIN instalar nada (verlo sin reinstalar)
   --skip-update   no corre 'pacman -Syu' (iterar rápido)
   --bateria=N     límite de carga N% (default 80; 0 = off)
   --no-bateria    no toca el límite de carga
@@ -134,9 +133,7 @@ if command -v paru &>/dev/null; then AUR="paru"
 elif command -v yay &>/dev/null; then AUR="yay"
 else AUR=""; fi
 
-# ============================================================
 # LISTAS DE PAQUETES (centralizadas -> instalacion agrupada)
-# ============================================================
 # Repos oficiales: una sola transaccion de pacman (rapido, sin overhead AUR).
 PKGS_REPO=(
     # Compositor (las apps de consumo —Steam, Discord, navegador, reproductores…—
@@ -375,11 +372,9 @@ mostrar_plan() {
     echo ""
 }
 
-# ============================================================
 # REGISTRO DE SECCIONES (para el flujo normal y para --solo)
-# ============================================================
 # Orden canónico de ejecución. --solo acepta estos nombres o su número.
-SECCIONES=(snapshot update repos aur flatpak opcionales configs generables launcher gtk cursor sddm branding steam teclado recursos proyeccion zen)
+SECCIONES=(snapshot update repos aur flatpak opcionales configs generables launcher gtk cursor sddm branding steam teclado recursos proyeccion zen rendimiento gaming)
 declare -A SEC_DESC=(
     [snapshot]="Snapshot pre-setup"
     [update]="Actualizar sistema"
@@ -399,6 +394,8 @@ declare -A SEC_DESC=(
     [proyeccion]="Utilidad de proyección"
     [flatpak]="Flatpak + remoto Flathub"
     [zen]="Navegador Zen: tema Horus, prefs y extensiones"
+    [rendimiento]="Rendimiento gráfico (supergfxctl, nvtop, kyu-power)"
+    [gaming]="Gaming (juegos web nostálgicos) — reservado"
 )
 # Qué necesita cada sección. Con --solo, si NINGUNA de las elegidas requiere
 # sudo no se pide password ni keep-alive (p.ej. --solo=proyeccion corre sin
@@ -406,10 +403,21 @@ declare -A SEC_DESC=(
 # 'recursos' solo usa sudo para el servicio de batería: hereda DO_BATERIA.
 declare -A SEC_SUDO=( [snapshot]=1 [update]=1 [repos]=1 [aur]=1 [opcionales]=1
     [configs]=1 [generables]=0 [launcher]=0 [gtk]=0 [cursor]=0 [sddm]=1 [branding]=1 [steam]=1
-    [teclado]=1 [recursos]=$DO_BATERIA [proyeccion]=0 [flatpak]=1 [zen]=1 )
+    [teclado]=1 [recursos]=$DO_BATERIA [proyeccion]=0 [flatpak]=1 [zen]=1 [rendimiento]=1 [gaming]=0 )
 declare -A SEC_RED=(  [snapshot]=0 [update]=1 [repos]=1 [aur]=1 [opcionales]=1
     [configs]=0 [generables]=0 [launcher]=0 [gtk]=0 [cursor]=0 [sddm]=0 [branding]=0
-    [steam]=0 [teclado]=0 [recursos]=0 [proyeccion]=0 [flatpak]=1 [zen]=0 )
+    [steam]=0 [teclado]=0 [recursos]=0 [proyeccion]=0 [flatpak]=1 [zen]=0 [rendimiento]=1 [gaming]=0 )
+
+# Mapeo sección → paquete (taxonomía del asistente). El núcleo SIEMPRE corre.
+# El asistente decide qué paquetes encender; la SELECCION se arma filtrando
+# SECCIONES por este mapeo, conservando el orden canónico de ejecución.
+declare -A SEC_PKG=(
+    [snapshot]=nucleo [update]=nucleo [repos]=nucleo [aur]=nucleo
+    [configs]=nucleo [generables]=nucleo [launcher]=nucleo [sddm]=nucleo
+    [branding]=nucleo [teclado]=nucleo [recursos]=nucleo [proyeccion]=nucleo
+    [gtk]=cosmeticos [cursor]=cosmeticos
+    [flatpak]=apps [opcionales]=apps [zen]=apps [steam]=apps
+    [rendimiento]=rendimiento [gaming]=gaming )
 
 _tabla_secciones() {
     local i=1 sec
@@ -446,9 +454,7 @@ if [ -n "$SOLO_RAW" ]; then
     fi
 fi
 
-# ============================================================
 # MODO --dry-run : solo el plan, no toca nada
-# ============================================================
 if [ "$DRY_RUN" -eq 1 ]; then
     if [ "${#SOLO_SECS[@]}" -gt 0 ]; then
         section "PLAN (--solo)"
@@ -461,9 +467,7 @@ if [ "$DRY_RUN" -eq 1 ]; then
     exit 0
 fi
 
-# ============================================================
 # MODO --check : healthcheck post-setup
-# ============================================================
 if [ "$DO_CHECK" -eq 1 ]; then
     section "Healthcheck Kyu OS"
     chk(){ if eval "$2" &>/dev/null; then ok "$1"; else warn "$1 — FALTA"; fi; }
@@ -474,7 +478,7 @@ if [ "$DO_CHECK" -eq 1 ]; then
     chk "Color scheme 'Kyu OS'"        "test -f '$HOME/.config/noctalia/colorschemes/Kyu OS/Kyu OS.json'"
     chk "foot.ini desplegado"          "test -f $HOME/.config/foot/foot.ini"
     chk "foot en sintaxis moderna"     "grep -qxF '[colors-dark]' $HOME/.config/foot/foot.ini"
-    chk "foot fondo difuminado"        "grep -qE '^alpha=0\.70' $HOME/.config/foot/foot.ini"
+    chk "foot fondo difuminado"        "grep -qE '^alpha=0?\.[0-9]' $HOME/.config/foot/foot.ini"
     chk "Noctalia reloj 12h"           "grep -qE 'use12hourFormat[^,]*true' $HOME/.config/noctalia/settings.json"
     chk "Cursor morado generado"       "test -d $HOME/.icons/Bibata-Modern-Purple/cursors"
     chk "Fuente Nerd (Meslo)"          "pacman -Q ttf-meslo-nerd"
@@ -493,9 +497,7 @@ if [ "$DO_CHECK" -eq 1 ]; then
     exit 0
 fi
 
-# ============================================================
 # MODO --capturar : vuelca lo ACTIVO (~/.config) de vuelta al REPO
-# ============================================================
 # El despliegue normal va repo -> ~/.config y PISA el activo (rm -rf). Todo lo
 # que ajustes por GUI (Noctalia) o a mano vive SOLO en el activo y se pierde en
 # la siguiente corrida. Este modo hace el camino inverso: copia el estado activo
@@ -569,9 +571,7 @@ if [ "$DO_CAPTURAR" -eq 1 ]; then
     exit 0
 fi
 
-# ============================================================
 # MODO --limpiar : borra restos de versiones viejas del setup
-# ============================================================
 # Antes el setup duplicaba PFP/Wallpapers a ~/Imágenes y dejaba un log único en
 # el repo. Ya no: las imágenes viven en el propio repo (Noctalia las lee de ahí)
 # y los logs van a ~/.local/state/kyu-os/logs. Esto borra esos restos. Pide
@@ -606,14 +606,45 @@ if [ "$DO_LIMPIAR" -eq 1 ]; then
     exit 0
 fi
 
-# ============================================================
 # PLAN + CONFIRMACION (flujo completo pregunta; --solo va directo)
-# ============================================================
 if [ "${#SOLO_SECS[@]}" -eq 0 ]; then
-    SELECCION=("${SECCIONES[@]}")
-    mostrar_plan
-    read -rp "$(echo -e "${YELLOW}¿Proceder con la instalación? [s/N]: ${NC}")" _resp
-    [[ "$_resp" =~ ^[sS]$ ]] || { warn "Cancelado por el usuario. No se modificó nada."; exit 0; }
+    # ── Asistente gum: idioma → modo → paquetes → tema ───────
+    # La UI vive en lib/kyu-ui.sh (la comparte preview/kyu-ui-preview.sh).
+    # El asistente NO instala: solo decide qué secciones corren y deja la
+    # ejecución a la maquinaria de siempre (SELECCION + bucle de despacho).
+    if [ ! -f "$SCRIPT_DIR/lib/kyu-ui.sh" ]; then
+        err "Falta $SCRIPT_DIR/lib/kyu-ui.sh (capa de interfaz del instalador)."; exit 1
+    fi
+    # shellcheck source=/dev/null
+    source "$SCRIPT_DIR/lib/kyu-ui.sh"
+    KYU_DGPU=0;  lspci 2>/dev/null | grep -qi nvidia && KYU_DGPU=1
+    KYU_SDBOOT=1; bootctl is-installed &>/dev/null || KYU_SDBOOT=0
+    [ "$KYU_PREVIEW" -eq 1 ] && export KYU_UI_PREVIEW=1
+
+    if ! kyu_wizard; then exit 0; fi   # el asistente ya avisó si se canceló
+
+    # Mapear elecciones → SELECCION (núcleo siempre; orden canónico)
+    declare -A PKG_ON=([nucleo]=1)
+    case "$KYU_MODE" in
+        full)   PKG_ON[cosmeticos]=1; PKG_ON[apps]=1; PKG_ON[gaming]=1
+                [ "$KYU_DGPU" = "1" ] && PKG_ON[rendimiento]=1 ;;
+        min)    : ;;   # solo núcleo
+        custom) for _p in "${KYU_PKGS[@]}"; do PKG_ON["$_p"]=1; done ;;
+    esac
+    SELECCION=()
+    for _s in "${SECCIONES[@]}"; do
+        [ -n "${PKG_ON[${SEC_PKG[$_s]}]:-}" ] && SELECCION+=("$_s")
+    done
+
+    # Modo preview: enseña el plan resultante y sale sin tocar nada.
+    if [ "$KYU_PREVIEW" -eq 1 ]; then
+        section "PLAN (preview — no se instala nada)"
+        echo -e "  ${PURPLE}Idioma:${NC} $KYU_LANG_NAME   ${PURPLE}Modo:${NC} $KYU_MODE   ${PURPLE}Tema:${NC} ${KYU_THEME:-(sin tema)}"
+        echo -e "  ${PURPLE}Secciones que correrían (${#SELECCION[@]}):${NC}"
+        for _t in "${SELECCION[@]}"; do echo "    • $_t — ${SEC_DESC[$_t]}"; done
+        echo ""; ok "Preview terminada — no se instaló ni cambió nada."
+        exit 0
+    fi
 else
     # Con --solo NO se pregunta: elegir secciones explícitamente ya es consentir.
     SELECCION=("${SOLO_SECS[@]}")
@@ -625,7 +656,7 @@ NECESITA_SUDO=0; NECESITA_RED=0; NECESITA_AUR=0
 for _t in "${SELECCION[@]}"; do
     [ "${SEC_SUDO[$_t]}" = "1" ] && NECESITA_SUDO=1
     [ "${SEC_RED[$_t]}"  = "1" ] && NECESITA_RED=1
-    case "$_t" in aur|opcionales) NECESITA_AUR=1 ;; esac
+    case "$_t" in aur|opcionales|rendimiento) NECESITA_AUR=1 ;; esac
 done
 
 # AUR helper: obligatorio solo si se van a instalar paquetes AUR.
@@ -633,9 +664,7 @@ if [ "$NECESITA_AUR" -eq 1 ] && [ -z "$AUR" ]; then
     err "No se encontró paru ni yay. Instala uno primero."; exit 1
 fi
 
-# ============================================================
 # Aviso + log (+ sudo con keep-alive solo si la selección lo pide)
-# ============================================================
 if [ "$NECESITA_SUDO" -eq 1 ]; then
     echo -e "\n${PURPLE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
     echo -e "${YELLOW}  ADVERTENCIA: Este script requiere sudo.${NC}"
@@ -681,16 +710,12 @@ if [ "$NECESITA_RED" -eq 1 ] && ! _hay_red; then
     exit 1
 fi
 
-# ============================================================
 # SECCIONES DEL SETUP
-# ============================================================
 # Cada sección es una función sec_<nombre>. El loop del final corre las
 # del array SELECCION (todas en el flujo normal, las elegidas con --solo).
 # El encabezado "[N/M]" lo imprime el loop con numeración dinámica.
 
-# ============================================================
 # SECCIÓN «snapshot» — SNAPSHOT PRE-SETUP (red de seguridad)
-# ============================================================
 sec_snapshot() {
 # CachyOS trae btrfs + snapper + limine. Un snapshot ANTES de tocar el sistema
 # permite revertir si algo sale mal. Solo si snapper esta configurado.
@@ -703,9 +728,7 @@ else
 fi
 }
 
-# ============================================================
 # SECCIÓN «update» — ACTUALIZAR SISTEMA
-# ============================================================
 sec_update() {
 if [ "$SKIP_UPDATE" -eq 1 ]; then
     warn "Update omitido (--skip-update)."
@@ -715,23 +738,17 @@ else
 fi
 }
 
-# ============================================================
 # SECCIÓN «repos» — PAQUETES DE REPOS (un solo batch)
-# ============================================================
 sec_repos() {
 instala_repo "${PKGS_REPO[@]}"
 }
 
-# ============================================================
 # SECCIÓN «aur» — PAQUETES AUR (un solo batch)
-# ============================================================
 sec_aur() {
 instala_aur "${PKGS_AUR[@]}"
 }
 
-# ============================================================
 # SECCIÓN «opcionales» — APPS OPCIONALES (menú interactivo)
-# ============================================================
 sec_opcionales() {
 # Apps de consumo en UN solo paso: se calcula qué falta de cada canal, se muestra
 # el set pendiente y, con un único "s", se instala todo. Reglas heredadas: sin TTY
@@ -832,9 +849,7 @@ SOBER_EOF
 fi
 }
 
-# ============================================================
 # SECCIÓN «configs» — DESPLIEGUE DE CONFIGS + LIMPIEZA + SCRIPTS
-# ============================================================
 sec_configs() {
 
 # Despliega tus dotfiles desde config/. Esto REEMPLAZA los antiguos parches sed
@@ -945,9 +960,7 @@ elif [ -z "$_zendesktop" ]; then
 fi
 }
 
-# ============================================================
 # SECCIÓN «generables» — GENERABLES KYU (colorscheme, fastfetch, steam, alias)
-# ============================================================
 sec_generables() {
 
 # --- Color scheme "Kyu OS" para Noctalia (paleta morada fija) ---
@@ -956,22 +969,22 @@ NOCTALIA_SETTINGS="$HOME/.config/noctalia/settings.json"
 if write_if_changed "$NOCTALIA_SCHEME_DIR/Kyu OS.json" "Color scheme 'Kyu OS'" << 'NOCTALIA_EOF'
 {
   "dark": {
-    "mPrimary": "#8b45f7", "mOnPrimary": "#18092b",
-    "mSecondary": "#c44fe6", "mOnSecondary": "#18092b",
-    "mTertiary": "#e85fb0", "mOnTertiary": "#18092b",
-    "mError": "#fb5c7e", "mOnError": "#18092b",
-    "mSurface": "#18092b", "mOnSurface": "#b88cf2",
-    "mSurfaceVariant": "#261146", "mOnSurfaceVariant": "#a784dd",
-    "mOutline": "#5031a0", "mShadow": "#0c0520",
-    "mHover": "#381a5e", "mOnHover": "#b88cf2",
+    "mPrimary": "#7a2be8", "mOnPrimary": "#140622",
+    "mSecondary": "#b340e0", "mOnSecondary": "#140622",
+    "mTertiary": "#df54a6", "mOnTertiary": "#140622",
+    "mError": "#f5567a", "mOnError": "#140622",
+    "mSurface": "#140622", "mOnSurface": "#a872f2",
+    "mSurfaceVariant": "#1e0c3a", "mOnSurfaceVariant": "#9568d8",
+    "mOutline": "#482a92", "mShadow": "#070210",
+    "mHover": "#2a1350", "mOnHover": "#a872f2",
     "terminal": {
-      "foreground": "#ede6ff", "background": "#1c0e33",
-      "selectionFg": "#b88cf2", "selectionBg": "#5031a0",
-      "cursorText": "#1c0e33", "cursor": "#8b45f7",
-      "normal": { "black": "#381a5e", "red": "#fb5c7e", "green": "#5ee6a0", "yellow": "#f5c453",
-                  "blue": "#8b7dff", "magenta": "#c44fe6", "cyan": "#5fd6e0", "white": "#a784dd" },
-      "bright": { "black": "#5031a0", "red": "#ff7492", "green": "#74f0b0", "yellow": "#ffd56a",
-                  "blue": "#a99cff", "magenta": "#da6ff0", "cyan": "#7fe4ec", "white": "#b88cf2" }
+      "foreground": "#e8dcff", "background": "#160a28",
+      "selectionFg": "#a872f2", "selectionBg": "#482a92",
+      "cursorText": "#160a28", "cursor": "#7a2be8",
+      "normal": { "black": "#2a1350", "red": "#f5567a", "green": "#5ee6a0", "yellow": "#f5c453",
+                  "blue": "#7d6ff5", "magenta": "#b340e0", "cyan": "#5fd6e0", "white": "#9568d8" },
+      "bright": { "black": "#482a92", "red": "#ff7492", "green": "#74f0b0", "yellow": "#ffd56a",
+                  "blue": "#9a8cf5", "magenta": "#cb52ec", "cyan": "#7fe4ec", "white": "#a872f2" }
     }
   },
   "light": {
@@ -1107,9 +1120,7 @@ BASHRC_PS1_EOF
 fi
 }
 
-# ============================================================
 # SECCIÓN «launcher» — LIMPIEZA DE APPS VISIBLES (ocultar .desktop)
-# ============================================================
 sec_launcher() {
 # Oculta del lanzador entradas .desktop que NO son apps de usuario, con override
 # a nivel usuario: un .desktop propio en ~/.local/share/applications/ con el MISMO
@@ -1229,9 +1240,7 @@ else
 fi
 }
 
-# ============================================================
 # SECCIÓN «gtk» — GTK / ICONOS / THUNAR / PORTAL
-# ============================================================
 sec_gtk() {
 
 # Carpetas Papirus en violet (lento: solo si no estan ya en violet)
@@ -1289,11 +1298,9 @@ else
 fi
 }
 
-# ============================================================
 # SECCIÓN «cursor» — CURSOR MORADO (Bibata) — lo lento
-# ============================================================
 sec_cursor() {
-CURSOR_COLOR="#8b45f7"; CURSOR_THEME="Bibata-Modern-Purple"; CURSOR_SIZE=24
+CURSOR_COLOR="#7a2be8"; CURSOR_THEME="Bibata-Modern-Purple"; CURSOR_SIZE=24
 SOURCE_THEME="Bibata-Modern-Classic"; DEST="$HOME/.icons/$CURSOR_THEME"
 
 # Recolorear cada cursor frame por frame es LO LENTO. Si ya esta generado, se
@@ -1365,9 +1372,7 @@ else
 fi
 }
 
-# ============================================================
 # SECCIÓN «sddm» — SDDM Sugar-Dark (morado, español)
-# ============================================================
 sec_sddm() {
 KYU_THEME="sugar-dark-kyu"; THEME_SRC="$SCRIPT_DIR/$KYU_THEME"; THEME_DEST="/usr/share/sddm/themes/$KYU_THEME"
 _sddm_cambio=0
@@ -1422,9 +1427,7 @@ if [ "$_sddm_cambio" -eq 1 ]; then
 fi
 }
 
-# ============================================================
 # SECCIÓN «branding» — BRANDING KYU OS (systemd-boot / sdboot-manage)
-# ============================================================
 # El título del menú NO es configurable de forma fiable en esta versión de
 # sdboot-manage: 'autogen' lo deriva del nombre del kernel ("linux-cachyos" ->
 # "Linux Cachyos"), ignorando ENTRY_TITLE. Por eso el branding va en dos frentes:
@@ -1508,7 +1511,7 @@ else
 # Reaplica branding Kyu OS a las entradas de systemd-boot tras sdboot-manage:
 #   - título "Kyu OS" (sdboot-manage lo deriva del nombre del kernel; esto lo corrige)
 #   - arranque silencioso (negro), sin tokens duplicados ni 'splash'
-# Autor: Kyu  ·  lo instala/reaplica el setup (sección branding) y el hook zzz-kyu-branding.
+# Lo instala/reaplica el setup (sección branding) y el hook zzz-kyu-branding.
 set -u
 SILENCIO=(quiet loglevel=3 rd.udev.log_level=3 vt.global_cursor_default=0 systemd.show_status=false)
 QUITAR=(splash)
@@ -1574,9 +1577,7 @@ KYUEOF
 fi
 }
 
-# ============================================================
 # SECCIÓN «steam» — FIX PANTALLA NEGRA DEL CLIENTE (CEF/Chromium)
-# ============================================================
 # Steam NO lo instala este script (va por el instalador de CachyOS); todo aquí
 # se aplica SOLO si Steam ya está presente. Si lo instalas después, corre:
 #   setup_master.sh --solo=steam
@@ -1612,7 +1613,6 @@ else
 # que deja el cliente EN NEGRO al arrancar en frío desde el .desktop de un juego.
 # Steam es de instancia única: basta con garantizar que SIEMPRE arranque con el
 # flag. Idempotente: si la llamada ya lo trae, no lo duplica.
-# Autor: Kyu
 REAL=/usr/bin/steam
 for a in "$@"; do
     [ "$a" = "-cef-disable-gpu" ] && exec "$REAL" "$@"
@@ -1661,9 +1661,7 @@ STEAM_EOF
 fi
 }
 
-# ============================================================
 # SECCIÓN «teclado» — RGB DEL TECLADO (regla udev ITE5570)
-# ============================================================
 # El control RGB (kyu-kbd-color) escribe al teclado por /dev/hidrawN. Sin permisos
 # solo root puede hacerlo. Esta regla da acceso vía el grupo 'input' + el tag
 # uaccess. DOS lecciones aprendidas a fuego, codificadas aquí:
@@ -1705,9 +1703,7 @@ sec_teclado() {
     fi
 }
 
-# ============================================================
 # SECCIÓN «recursos» — RECURSOS + BATERÍA
-# ============================================================
 sec_recursos() {
 
 # PFP y wallpapers: viven en el propio repo ($SCRIPT_DIR/PFP y $SCRIPT_DIR/
@@ -1755,9 +1751,7 @@ else
 fi
 }
 
-# ============================================================
 # SECCIÓN «proyeccion» — UTILIDAD DE PROYECCIÓN (monitor externo / presentaciones)
-# ============================================================
 sec_proyeccion() {
 # Niri NO clona salidas de forma nativa: cada monitor es independiente. Lo
 # robusto para presentar es EXTENDER y poner las slides en pantalla completa en
@@ -1766,7 +1760,7 @@ sec_proyeccion() {
 # que maneja el externo en caliente vía IPC de Niri (no toca el config.kdl).
 write_if_changed "$HOME/.local/bin/proyectar" "Utilidad de proyección ~/.local/bin/proyectar" << 'PROY_EOF'
 #!/usr/bin/env python3
-# Autor: Kyu — control de proyeccion / monitor externo en Niri
+# Control de proyeccion / monitor externo en Niri
 #
 # Niri NO tiene espejo (mirror) nativo: cada salida es independiente y las
 # ventanas no se clonan entre monitores. Lo robusto para presentar es EXTENDER
@@ -2036,12 +2030,9 @@ PROY_EOF
 chmod +x "$HOME/.local/bin/proyectar" 2>/dev/null || true
 }
 
-# ============================================================
 # EJECUCIÓN DE LAS SECCIONES SELECCIONADAS
 
-# ============================================================
 # SECCIÓN «flatpak» — utilidades Flatpak + remoto Flathub
-# ============================================================
 sec_flatpak() {
     if command -v flatpak &>/dev/null || pacman -Qq flatpak &>/dev/null; then
         skip "Flatpak ya estaba instalado."
@@ -2057,12 +2048,10 @@ sec_flatpak() {
     fi
 }
 
-# ============================================================
 # SECCIÓN «zen» — tema Horus para Zen (chrome, prefs, extensiones)
 #   policies.json -> /opt/zen-browser-bin/distribution (sudo)
 #   user.js + CSS -> todos los perfiles de ~/.zen (nombres con espacios)
 #   Dark Reader (config/zen/darkreader-horus.json) se IMPORTA a mano.
-# ============================================================
 sec_zen() {
     local src="${KYU_OS_DIR:-$HOME/kyu-os}/config/zen"
     local zen_dir="$HOME/.zen" ini="$HOME/.zen/profiles.ini"
@@ -2104,7 +2093,36 @@ sec_zen() {
     fi
 }
 
-# ============================================================
+# SECCIÓN «rendimiento» — RENDIMIENTO GRÁFICO (GPU híbrida)
+# Solo aplica si hay GPU dedicada. Instala herramientas de cambio/monitoreo
+# (supergfxctl, nvtop) y deja que kyu-power arme las curvas de ventilador + el
+# hook de energía. Todo va con guardas: si algo falta, avisa y sigue.
+sec_rendimiento() {
+    if ! lspci 2>/dev/null | grep -qi nvidia; then
+        skip "Sin GPU dedicada; rendimiento gráfico omitido."
+        return 0
+    fi
+    instala_repo nvtop
+    instala_aur supergfxctl
+    local KP=""
+    command -v kyu-power &>/dev/null && KP="kyu-power"
+    [ -z "$KP" ] && [ -x "$HOME/.local/bin/kyu-power" ] && KP="$HOME/.local/bin/kyu-power"
+    if [ -n "$KP" ]; then
+        if "$KP" setup; then
+            did "kyu-power setup aplicado (curvas de ventilador + hook de energía)."
+        else
+            nota "kyu-power setup no completó; revísalo a mano con: kyu-power setup"
+        fi
+    else
+        nota "kyu-power aún no está en PATH; corre 'kyu-solo configs' y reintenta esta sección."
+    fi
+}
+
+# SECCIÓN «gaming» — JUEGOS WEB (reservada, aún pendiente)
+sec_gaming() {
+    skip "Juegos web (PvZ Gardenless, AB Epic, AllStars): aún pendientes; sección reservada."
+}
+
 _idx=1
 for _t in "${SELECCION[@]}"; do
     section "[$_idx/${#SELECCION[@]}] ${SEC_DESC[$_t]}"
@@ -2112,9 +2130,22 @@ for _t in "${SELECCION[@]}"; do
     _idx=$((_idx+1))
 done
 
-# ============================================================
+# ── Aplicar el tema elegido en el asistente (si hubo y no es preview) ──
+# kyu-tema ya quedó desplegado por la sección configs; aplica niri/teclado
+# (y foot/colorscheme cuando esa pieza esté activa). Si el hot-reload no corre
+# (p.ej. fuera de Niri), igual deja la config escrita para el próximo login.
+if [ "${KYU_PREVIEW:-0}" -eq 0 ] && [ -n "${KYU_THEME:-}" ] && [ "${KYU_THEME}" != "__custom__" ]; then
+    if [ -x "$HOME/.local/bin/kyu-tema" ]; then
+        section "Tema: $KYU_THEME"
+        if "$HOME/.local/bin/kyu-tema" "$KYU_THEME"; then
+            did "Tema '$KYU_THEME' aplicado."
+        else
+            nota "No se pudo aplicar el tema automáticamente; corre: kyu-tema \"$KYU_THEME\""
+        fi
+    fi
+fi
+
 # RESUMEN (construido desde lo que DE VERDAD pasó, no texto fijo)
-# ============================================================
 section "Resumen de esta corrida"
 echo ""
 

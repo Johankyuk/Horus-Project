@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 # Control RGB del teclado ITE5570 via LampArray estandar (reports 0x41/0x45/0x46)
-# Autor: Kyu
 import sys, os, fcntl, glob
 
 def HIDIOCSFEATURE(l): return 0xC0000000 | (l << 16) | 0x4806

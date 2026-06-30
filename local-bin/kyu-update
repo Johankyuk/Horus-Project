@@ -1,5 +1,4 @@
 #!/bin/bash
-# Autor: Kyu
 # Actualiza todo en un solo comando: rankea mirrors (Arch + CachyOS), luego repos +
 # AUR (paru) y por último los Flatpaks.
 set -e

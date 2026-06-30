@@ -13,3 +13,5 @@ setup_master.sh.bak
 
 # zips sueltos
 *.zip
+__pycache__/
+*.pyc

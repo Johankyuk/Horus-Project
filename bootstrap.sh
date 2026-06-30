@@ -1,6 +1,4 @@
 #!/bin/bash
-# ============================================================
-# Autor: Kyu
 # Bootstrap de Kyu OS sobre una CachyOS ya instalada.
 # Instala git, clona el repo y lanza el setup en un solo paso.
 #
@@ -13,7 +11,6 @@
 # Variables opcionales:
 #   KYU_OS_DIR   donde clonar el repo   (default: ~/kyu-os)
 #   KYU_REF      rama o tag a clonar     (default: main)
-# ============================================================
 set -euo pipefail
 
 REPO_URL="https://github.com/Johankyuk/kyu-os.git"

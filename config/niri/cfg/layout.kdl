@@ -12,27 +12,27 @@ layout {
     // ─────── Tema Kyu OS — "Horus" (derivada del wallpaper) ───────
     focus-ring {
         width 4
-        active-color   "#8b45f7"
-        inactive-color "#4a2a82"
-        urgent-color   "#fb5c7e"
+        active-color   "#7a2be8"
+        inactive-color "#482a92"
+        urgent-color   "#f5567a"
     }
 
     border {
         off
         width 2
-        active-color   "#8b45f7"
-        inactive-color "#4a2a82"
-        urgent-color   "#fb5c7e"
+        active-color   "#7a2be8"
+        inactive-color "#482a92"
+        urgent-color   "#f5567a"
     }
 
     tab-indicator {
-        active-color   "#8b45f7"
-        inactive-color "#4a2a82"
-        urgent-color   "#fb5c7e"
+        active-color   "#7a2be8"
+        inactive-color "#482a92"
+        urgent-color   "#f5567a"
     }
 
     insert-hint {
-        gradient from="#8b45f780" to="#c44fe680" angle=45 relative-to="workspace-view"
+        gradient from="#7a2be880" to="#b340e080" angle=45 relative-to="workspace-view"
     }
 
     shadow {
@@ -40,7 +40,7 @@ layout {
         softness 30
         spread 5
         offset x=0 y=5
-        color "#0c052099"
+        color "#07021099"
     }
     // ───────────────────────────────────────────────────────────────
 

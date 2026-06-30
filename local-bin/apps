@@ -1,5 +1,4 @@
 #!/bin/bash
-# Autor: Kyu
 # Alternativa al lanzador de Noctalia: muestra TODAS las apps instaladas (incluidas
 # las ocultas del launcher minimo) con su id .desktop y su nombre, asi sabes que
 # puedes correr sin el lanzador.

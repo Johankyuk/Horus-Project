@@ -1,6 +1,4 @@
 #!/usr/bin/env python3
-# ============================================================
-# Autor: Kyu
 # kyu-tema — Aplica un tema de Kyu OS a todo el sistema.
 #   Fuente unica de color: kyu_temas.py. De ahi sale la paleta de
 #   cualquier tema y se propaga a Noctalia, foot, Niri y el wallpaper.
@@ -14,8 +12,7 @@
 #
 #   Idempotente: solo escribe lo que cambia, respalda antes de tocar, y
 #   resume al final que se movio. No edita a mano: regenera desde el motor.
-# ============================================================
-import sys, os, re, json, shutil, subprocess, datetime, unicodedata
+import sys, os, re, json, shutil, subprocess, datetime, unicodedata, time
 
 # ── Localizar repo y motor (mismo criterio que kyu-setup) ────
 def _localizar_repo():
@@ -73,7 +70,7 @@ WALL_DIR = os.path.join(REPO, "Wallpapers")
 
 # Conjuntos de color con doble rol — se anclan por-archivo.
 ANSI_FIJOS = {v.lstrip('#').lower() for v in kt.ANSI_FIJOS.values()}  # red/green/.../bright
-NIRI_ROTAN = ["8b45f7", "4a2a82", "c44fe6"]   # decorativos; urgent (fb5c7e) queda fijo
+NIRI_ROTAN = ["7a2be8", "482a92", "b340e0"]   # decorativos; urgent (f5567a) queda fijo
 
 C = {"ok": "\033[92m", "warn": "\033[93m", "p": "\033[95m", "n": "\033[0m"}
 def did(m):  print(f"{C['ok']}[+]{C['n']} {m}")
@@ -220,6 +217,14 @@ def reload_hot():
     if shutil.which("niri"):
         subprocess.run(["niri", "msg", "action", "load-config-file"], check=False)
     subprocess.run(["pkill", "-USR1", "foot"], check=False)  # foot relee colores con SIGUSR1
+    # Noctalia muestra la paleta YA generada (colors.json); reescribir el scheme
+    # en disco no basta. 'darkMode toggle' x2 vuelve al mismo modo y regenera
+    # colors.json desde el scheme nuevo (workaround oficial). Si no corre, no pasa nada.
+    if shutil.which("qs"):
+        for _ in range(2):
+            subprocess.run(["qs", "-c", "noctalia-shell", "ipc", "call", "darkMode", "toggle"],
+                           check=False)
+            time.sleep(0.4)
 
 
 # ── 7) Teclado RGB (ITE5570 LampArray): color = primary del tema ──
@@ -247,18 +252,18 @@ def aplicar(tema):
     ts = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     print(f"{C['p']}Aplicando tema: {tema}{C['n']}  (repo: {REPO})")
     # ── Targets activos del tema ──────────────────────────────
-    # Por decisión de Kyu, el tema toca SOLO Niri (+ cursor y GTK/Thunar,
-    # que se agregan abajo). El wallpaper se gestiona aparte. Las funciones
-    # gen_colorscheme/gen_foot/set_wallpaper_activo/patch_sddm siguen en el
-    # archivo por si se quieren reactivar, pero NO se llaman.
+    # El tema recolorea Niri, el teclado RGB, la paleta de Noctalia
+    # (colorscheme + regeneración) y foot. El wallpaper se gestiona aparte.
     patch_niri(tema, ts)
     patch_kbd(tema, ts)        # ← teclado RGB sigue el primary del tema
+    gen_colorscheme(tema, ts)  # ← reescribe el scheme "Kyu OS" con el tema
+    gen_foot(tema, ts)         # ← foot.ini del tema (ANSI semánticos fijos)
     # patch_cursor(tema, ts)   # (pendiente) recolorea el tema de cursor
     # patch_gtk(tema, ts)      # (pendiente) carpetas de Thunar / acento GTK
     save_state(tema)
     if _CAMBIOS[0]:
         reload_hot()
-        did(f"Tema '{tema}' aplicado (Niri). Respaldo: {os.path.join(BK_ROOT, ts)}")
+        did(f"Tema '{tema}' aplicado (Niri + Noctalia + foot + teclado). Respaldo: {os.path.join(BK_ROOT, ts)}")
     else:
         skip(f"Todo ya estaba en '{tema}'. Sin cambios.")
 

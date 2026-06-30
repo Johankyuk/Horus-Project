@@ -1,5 +1,4 @@
 #!/bin/bash
-# Autor: Kyu
 # Lanzador de setup_master.sh. NO esta atado a una ruta fija: se autolocaliza.
 # Orden de resolucion del repo:
 #   1) variable de entorno KYU_OS_DIR, si esta definida
