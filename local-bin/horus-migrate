@@ -25,8 +25,8 @@ fi
 if [ -d "$HOME/horus/.git" ]; then
     mkdir -p "$HOME/.config/horus"
     echo "$HOME/horus" > "$HOME/.config/horus/repo"
-    git -C "$HOME/horus" remote set-url origin "https://github.com/Johankyuk/horus.git" 2>/dev/null \
-        && did "remote origin → github.com/Johankyuk/horus (renombra el repo en GitHub si no lo has hecho)"
+    git -C "$HOME/horus" remote set-url origin "https://github.com/Johankyuk/Horus-Project.git" 2>/dev/null \
+        && did "remote origin → github.com/Johankyuk/Horus-Project (renombra el repo en GitHub si no lo has hecho)"
 fi
 
 # 3. Atajos viejos kyu-* fuera del PATH (horus-start despliega los nuevos)

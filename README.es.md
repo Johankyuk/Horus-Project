@@ -9,7 +9,7 @@ Horus Project nació de la idea de crear una distro que pudiera prestarse para c
 **¿Empezamos?**
 
 ```
-bash <(curl -fsSL https://raw.githubusercontent.com/Johankyuk/horus/main/bootstrap.sh)
+bash <(curl -fsSL https://raw.githubusercontent.com/Johankyuk/Horus-Project/main/bootstrap.sh)
 ```
 
 ## Contenido
@@ -34,7 +34,7 @@ bash <(curl -fsSL https://raw.githubusercontent.com/Johankyuk/horus/main/bootstr
 Un solo comando. Instala git si falta, clona el repo en `~/horus` y lanza el instalador:
 
 ```
-bash <(curl -fsSL https://raw.githubusercontent.com/Johankyuk/horus/main/bootstrap.sh)
+bash <(curl -fsSL https://raw.githubusercontent.com/Johankyuk/Horus-Project/main/bootstrap.sh)
 ```
 
 Eso es todo. A partir de ahí el instalador te lleva de la mano.

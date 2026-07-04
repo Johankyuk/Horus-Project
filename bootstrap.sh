@@ -3,7 +3,7 @@
 # Instala git, clona el repo y lanza el setup en un solo paso.
 #
 # Uso (instalacion rapida, estilo Omarchy):
-#   bash <(curl -fsSL https://raw.githubusercontent.com/Johankyuk/horus/main/bootstrap.sh)
+#   bash <(curl -fsSL https://raw.githubusercontent.com/Johankyuk/Horus-Project/main/bootstrap.sh)
 #
 # Acepta los mismos flags que setup_master.sh, p.ej:
 #   bash <(curl -fsSL .../bootstrap.sh) --dry-run
@@ -13,7 +13,7 @@
 #   HORUS_REF      rama o tag a clonar     (default: main)
 set -euo pipefail
 
-REPO_URL="https://github.com/Johankyuk/horus.git"
+REPO_URL="https://github.com/Johankyuk/Horus-Project.git"
 DEST="${HORUS_DIR:-$HOME/horus}"
 REF="${HORUS_REF:-main}"
 

@@ -9,7 +9,7 @@ Horus Project was born from the idea of building a distro that could fit any occ
 **Shall we begin?**
 
 ```
-bash <(curl -fsSL https://raw.githubusercontent.com/Johankyuk/horus/main/bootstrap.sh)
+bash <(curl -fsSL https://raw.githubusercontent.com/Johankyuk/Horus-Project/main/bootstrap.sh)
 ```
 
 ## Contents
@@ -34,7 +34,7 @@ bash <(curl -fsSL https://raw.githubusercontent.com/Johankyuk/horus/main/bootstr
 One command. Installs git if missing, clones the repo into `~/horus` and launches the installer:
 
 ```
-bash <(curl -fsSL https://raw.githubusercontent.com/Johankyuk/horus/main/bootstrap.sh)
+bash <(curl -fsSL https://raw.githubusercontent.com/Johankyuk/Horus-Project/main/bootstrap.sh)
 ```
 
 That's it. From there the installer walks you through it.
