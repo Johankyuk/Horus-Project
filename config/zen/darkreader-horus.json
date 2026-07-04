@@ -8,7 +8,7 @@
     "grayscale": 0,
     "sepia": 0,
     "useFont": false,
-    "fontFamily": "",
+    "fontFamily": "Open Sans",
     "textStroke": 0,
     "engine": "dynamicTheme",
     "stylesheet": "",

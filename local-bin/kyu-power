@@ -25,7 +25,7 @@ P='\033[0;35m'; G='\033[0;32m'; Y='\033[1;33m'; R='\033[0;31m'; N='\033[0m'
 log(){ echo -e "${P}[power]${N} $1"; }; ok(){ echo -e "${G}[+]${N} $1"; }
 warn(){ echo -e "${Y}[i]${N} $1"; }; err(){ echo -e "${R}[x]${N} $1"; }
 
-CURVA_QUIET="30c:0%,50c:0%,62c:0%,70c:18%,78c:38%,85c:62%,91c:88%,97c:100%"
+CURVA_QUIET="30c:0%,55c:0%,63c:10%,70c:28%,78c:52%,85c:78%,91c:100%,97c:100%"
 CURVA_BAL="30c:0%,50c:12%,60c:28%,70c:45%,78c:62%,85c:82%,91c:100%,96c:100%"
 CURVA_PERF="35c:25%,48c:42%,58c:60%,67c:78%,74c:92%,81c:100%,88c:100%,95c:100%"
 CURVA_MAX="20c:100%,40c:100%,55c:100%,65c:100%,75c:100%,85c:100%,90c:100%,95c:100%"
@@ -107,6 +107,7 @@ case "${1:-}" in
         _render_igpu
         _ensure_gpu Hybrid
         warn "Silencio=dGPU dormida · Equilibrado/Rendimiento=juegos en dGPU (automático por perfil)."
+        echo -e "${G}✓ Configuración de energía/GPU lista.${N}"
         ;;
     silencio|eco|ahorro) _perfil power-saver ;;
     equilibrado|equi|eq) _perfil balanced ;;

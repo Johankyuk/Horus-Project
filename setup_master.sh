@@ -374,7 +374,7 @@ mostrar_plan() {
 
 # REGISTRO DE SECCIONES (para el flujo normal y para --solo)
 # Orden canónico de ejecución. --solo acepta estos nombres o su número.
-SECCIONES=(snapshot update repos aur flatpak opcionales configs generables launcher gtk cursor sddm branding steam teclado recursos proyeccion zen rendimiento gaming)
+SECCIONES=(snapshot update repos aur flatpak opcionales configs generables launcher gtk cursor sddm branding steam teclado recursos proyeccion sesion zen rendimiento gaming)
 declare -A SEC_DESC=(
     [snapshot]="Snapshot pre-setup"
     [update]="Actualizar sistema"
@@ -392,6 +392,7 @@ declare -A SEC_DESC=(
     [teclado]="RGB del teclado (regla udev ITE5570)"
     [recursos]="Recursos + batería"
     [proyeccion]="Utilidad de proyección"
+    [sesion]="Sesión: tecla power/tapa → bloqueo (sin suspender)"
     [flatpak]="Flatpak + remoto Flathub"
     [zen]="Navegador Zen: tema Horus, prefs y extensiones"
     [rendimiento]="Rendimiento gráfico (supergfxctl, nvtop, kyu-power)"
@@ -403,10 +404,10 @@ declare -A SEC_DESC=(
 # 'recursos' solo usa sudo para el servicio de batería: hereda DO_BATERIA.
 declare -A SEC_SUDO=( [snapshot]=1 [update]=1 [repos]=1 [aur]=1 [opcionales]=1
     [configs]=1 [generables]=0 [launcher]=0 [gtk]=0 [cursor]=0 [sddm]=1 [branding]=1 [steam]=1
-    [teclado]=1 [recursos]=$DO_BATERIA [proyeccion]=0 [flatpak]=1 [zen]=1 [rendimiento]=1 [gaming]=0 )
+    [teclado]=1 [recursos]=$DO_BATERIA [proyeccion]=0 [sesion]=1 [flatpak]=1 [zen]=1 [rendimiento]=1 [gaming]=0 )
 declare -A SEC_RED=(  [snapshot]=0 [update]=1 [repos]=1 [aur]=1 [opcionales]=1
     [configs]=0 [generables]=0 [launcher]=0 [gtk]=0 [cursor]=0 [sddm]=0 [branding]=0
-    [steam]=0 [teclado]=0 [recursos]=0 [proyeccion]=0 [flatpak]=1 [zen]=0 [rendimiento]=1 [gaming]=0 )
+    [steam]=0 [teclado]=0 [recursos]=0 [proyeccion]=0 [sesion]=0 [flatpak]=1 [zen]=0 [rendimiento]=1 [gaming]=0 )
 
 # Mapeo sección → paquete (taxonomía del asistente). El núcleo SIEMPRE corre.
 # El asistente decide qué paquetes encender; la SELECCION se arma filtrando
@@ -414,7 +415,7 @@ declare -A SEC_RED=(  [snapshot]=0 [update]=1 [repos]=1 [aur]=1 [opcionales]=1
 declare -A SEC_PKG=(
     [snapshot]=nucleo [update]=nucleo [repos]=nucleo [aur]=nucleo
     [configs]=nucleo [generables]=nucleo [launcher]=nucleo [sddm]=nucleo
-    [branding]=nucleo [teclado]=nucleo [recursos]=nucleo [proyeccion]=nucleo
+    [branding]=nucleo [teclado]=nucleo [recursos]=nucleo [proyeccion]=nucleo [sesion]=nucleo
     [gtk]=cosmeticos [cursor]=cosmeticos
     [flatpak]=apps [opcionales]=apps [zen]=apps [steam]=apps
     [rendimiento]=rendimiento [gaming]=gaming )
@@ -1040,6 +1041,17 @@ else
     nota "config/noctalia/settings.json no está en el paquete; se omite."
 fi
 
+# --- Forzar a Noctalia a re-aplicar el scheme ---
+# Editar el archivo del scheme en disco NO basta: Noctalia muestra la paleta ya
+# generada/cacheada. 'darkMode toggle' x2 vuelve al mismo modo y regenera la
+# paleta desde el scheme (workaround oficial). Solo si Noctalia está corriendo.
+if command -v qs >/dev/null 2>&1 && qs -c noctalia-shell ipc call darkMode toggle >/dev/null 2>&1; then
+    sleep 0.4; qs -c noctalia-shell ipc call darkMode toggle >/dev/null 2>&1 || true
+    did "Noctalia: paleta regenerada desde el scheme 'Kyu OS'."
+else
+    nota "Noctalia no respondió al IPC (¿no está corriendo?); al entrar a la sesión re-aplica el scheme en Ajustes → Color Scheme, o corre dos veces: qs -c noctalia-shell ipc call darkMode toggle"
+fi
+
 # --- Steam: el override .desktop y el wrapper anti-pantalla-negra se movieron a
 #     la sección «steam» (necesita sudo para /usr/local/bin; no encaja en esta
 #     sección sin privilegios). Ver sec_steam o: setup_master.sh --solo=steam
@@ -1374,7 +1386,7 @@ fi
 
 # SECCIÓN «sddm» — SDDM Sugar-Dark (morado, español)
 sec_sddm() {
-KYU_THEME="sugar-dark-kyu"; THEME_SRC="$SCRIPT_DIR/$KYU_THEME"; THEME_DEST="/usr/share/sddm/themes/$KYU_THEME"
+local KYU_THEME="sugar-dark-kyu"; local THEME_SRC="$SCRIPT_DIR/$KYU_THEME"; local THEME_DEST="/usr/share/sddm/themes/$KYU_THEME"
 _sddm_cambio=0
 
 # Reloj 12h (AM/PM) en el greeter: la variable HourFormat del theme.conf (lo que
@@ -2091,6 +2103,23 @@ sec_zen() {
     else
         nota "Ningún perfil de Zen en disco; abre Zen y reintenta."
     fi
+}
+
+# SECCIÓN «sesion» — TECLA POWER / TAPA → BLOQUEO (sin suspender)
+# Drop-in de logind: la tecla power y el cierre de tapa BLOQUEAN en vez de
+# suspender/apagar. Niri cede la tecla power con 'disable-power-key-handling'
+# (input.kdl); logind emite la señal Lock y kyu-lock-listener (autostart) muestra
+# el lockscreen de Noctalia. Aplica al reiniciar (logind lee el drop-in al boot).
+sec_sesion() {
+    sudo install -Dm644 /dev/stdin /etc/systemd/logind.conf.d/10-kyu-lock.conf <<'KYUEOF'
+# Kyu OS — tecla power y cierre de tapa BLOQUEAN (no suspenden ni apagan).
+[Login]
+HandlePowerKey=lock
+HandleLidSwitch=lock
+HandleLidSwitchExternalPower=lock
+HandleLidSwitchDocked=ignore
+KYUEOF
+    did "logind: tecla power/tapa → bloqueo (aplica al reiniciar)."
 }
 
 # SECCIÓN «rendimiento» — RENDIMIENTO GRÁFICO (GPU híbrida)

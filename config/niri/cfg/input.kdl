@@ -25,4 +25,8 @@ input {
 
     focus-follows-mouse // Automatically focus windows under the mouse pointer
     workspace-auto-back-and-forth // Enable workspace back & forth switching
+
+    // Cede la tecla power a logind (que la maneja como bloqueo, ver 10-kyu-lock.conf).
+    // Sin esto, Niri la intercepta y SUSPENDE en vez de bloquear.
+    disable-power-key-handling
 }

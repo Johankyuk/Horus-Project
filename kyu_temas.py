@@ -134,6 +134,48 @@ def construir(nombre):
 def lista_temas():
     return list(TEMAS) + ["Gris"]
 
+# ── Modo CLARO: paleta por tema (superficies claras, texto oscuro) ──
+def _oscurece(hexc, Lmax=0.50):
+    """Baja la luz de un color para que lea sobre fondo claro."""
+    L, C, H = _lch(hexc)
+    return _hlc(min(L, Lmax), C, H)
+
+def construir_light(nombre):
+    """Paleta de MODO CLARO del tema: superficies claras + texto oscuro, con
+    los acentos del MISMO tono del tema (oscurecidos para contraste). Los ANSI
+    semanticos se oscurecen para leer sobre fondo claro (siguen significando
+    lo mismo: rojo=error, verde=ok...)."""
+    gray = (nombre == "Gris")
+    H = 0.0 if gray else _lch(construir(nombre)["mPrimary"])[2]
+    c = lambda L, Cr: _hlc(L, 0.0 if gray else Cr, 0.0 if gray else H)
+    pal = {
+        "mPrimary":          c(0.52, 0.160),
+        "mOnPrimary":        c(0.99, 0.010),
+        "mSecondary":        c(0.55, 0.130),
+        "mTertiary":         c(0.58, 0.120),
+        "mError":            "#c0263f",
+        "mSurface":          c(0.975, 0.010),
+        "mOnSurface":        c(0.22, 0.045),
+        "mSurfaceVariant":   c(0.92, 0.020),
+        "mOnSurfaceVariant": c(0.42, 0.040),
+        "mOutline":          c(0.70, 0.030),
+        "mShadow":           c(0.80, 0.008),
+        "mHover":            c(0.90, 0.030),
+        "termFg":            c(0.25, 0.040),
+        "termBg":            c(0.970, 0.008),
+        "termSelFg":         c(0.18, 0.050),
+        "termSelBg":         c(0.86, 0.040),
+        "termCursor":        c(0.50, 0.160),
+    }
+    # ANSI para fondo claro: semanticos oscurecidos; neutros invertidos.
+    for k, v in ANSI_FIJOS.items():
+        pal[k] = _oscurece(v, 0.58 if k.endswith("Bright") else 0.50)
+    pal["black"]       = c(0.30, 0.030)
+    pal["white"]       = c(0.72, 0.020)
+    pal["blackBright"] = c(0.45, 0.030)
+    pal["whiteBright"] = c(0.85, 0.015)
+    return pal
+
 if __name__ == "__main__":
     todos = {n: construir(n) for n in lista_temas()}
     print(json.dumps(todos, indent=2, ensure_ascii=False))
