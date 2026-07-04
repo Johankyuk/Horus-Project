@@ -1,0 +1,14 @@
+[Unit]
+Description=Horus Project — power-limit de la dGPU segun el perfil de energia
+After=multi-user.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/horus-power-hook
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=3s
+KillMode=mixed
+
+[Install]
+WantedBy=multi-user.target

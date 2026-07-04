@@ -1,23 +1,23 @@
 #!/bin/bash
-# Bootstrap de Kyu OS sobre una CachyOS ya instalada.
+# Bootstrap de Horus Project sobre una CachyOS ya instalada.
 # Instala git, clona el repo y lanza el setup en un solo paso.
 #
 # Uso (instalacion rapida, estilo Omarchy):
-#   bash <(curl -fsSL https://raw.githubusercontent.com/Johankyuk/kyu-os/main/bootstrap.sh)
+#   bash <(curl -fsSL https://raw.githubusercontent.com/Johankyuk/horus/main/bootstrap.sh)
 #
 # Acepta los mismos flags que setup_master.sh, p.ej:
 #   bash <(curl -fsSL .../bootstrap.sh) --dry-run
 #
 # Variables opcionales:
-#   KYU_OS_DIR   donde clonar el repo   (default: ~/kyu-os)
-#   KYU_REF      rama o tag a clonar     (default: main)
+#   HORUS_DIR   donde clonar el repo   (default: ~/horus)
+#   HORUS_REF      rama o tag a clonar     (default: main)
 set -euo pipefail
 
-REPO_URL="https://github.com/Johankyuk/kyu-os.git"
-DEST="${KYU_OS_DIR:-$HOME/kyu-os}"
-REF="${KYU_REF:-main}"
+REPO_URL="https://github.com/Johankyuk/horus.git"
+DEST="${HORUS_DIR:-$HOME/horus}"
+REF="${HORUS_REF:-main}"
 
-say() { printf '\033[0;35m[kyu]\033[0m %s\n' "$1"; }
+say() { printf '\033[0;35m[horus]\033[0m %s\n' "$1"; }
 die() { printf '\033[0;31m[err]\033[0m %s\n' "$1" >&2; exit 1; }
 
 [ "$(id -u)" -eq 0 ] && die "No corras esto como root. Hazlo como tu usuario; el setup pedira sudo cuando lo necesite."
@@ -34,13 +34,13 @@ if [ -d "$DEST/.git" ]; then
     git -C "$DEST" fetch --depth 1 origin "$REF"
     git -C "$DEST" reset --hard "origin/$REF"
 else
-    say "Clonando Kyu OS en $DEST..."
+    say "Clonando Horus Project en $DEST..."
     git clone --depth 1 --branch "$REF" "$REPO_URL" "$DEST"
 fi
 
-# 3) registrar la ruta para que 'kyu-setup' se autolocalice despues
-mkdir -p "$HOME/.config/kyu-os"
-printf '%s\n' "$DEST" > "$HOME/.config/kyu-os/repo"
+# 3) registrar la ruta para que 'horus-start' se autolocalice despues
+mkdir -p "$HOME/.config/horus"
+printf '%s\n' "$DEST" > "$HOME/.config/horus/repo"
 
 # 4) lanzar el setup, reenviando cualquier flag tal cual
 say "Lanzando setup..."

@@ -1,4 +1,0 @@
-#!/bin/bash
-# kyu-dry: simula la corrida completa; reporta que haria sin tocar nada. Autor: Kyu
-# Atajo de: kyu-setup --dry-run
-exec kyu-setup --dry-run "$@"

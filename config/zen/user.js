@@ -1,5 +1,4 @@
-// Autor: Kyu
-// Kyu OS — perfil Zen, prefs base del tema Horus.
+// Horus Project — perfil Zen, prefs base del tema Horus.
 
 // --- userChrome.css / userContent.css habilitados ---
 user_pref("toolkit.legacyUserProfileCustomizations.stylesheets", true);

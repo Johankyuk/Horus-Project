@@ -1,7 +1,7 @@
 # backups que genera 'setup_master.sh --capturar'
 .repo-backup-*/
 
-# basura de makepkg (kyu-branding se compila localmente)
+# basura de makepkg (branding se compila localmente)
 *.pkg.tar.zst
 */pkg/
 */src/

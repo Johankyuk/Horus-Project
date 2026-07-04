@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Autor: Kyu — control de proyeccion / monitor externo en Niri
+# proyectar — control de proyeccion / monitor externo en Niri
 #
 # Niri NO tiene espejo (mirror) nativo: cada salida es independiente y las
 # ventanas no se clonan entre monitores. Lo robusto para presentar es EXTENDER
@@ -112,7 +112,7 @@ def modo_path():
     Sirve para que el toggle alterne aunque no haya cable: guarda el modo elegido
     para aplicarlo cuando conectes el monitor."""
     base = os.environ.get("XDG_STATE_HOME") or os.path.expanduser("~/.local/state")
-    return os.path.join(base, "kyu-os", "proyectar.modo")
+    return os.path.join(base, "horus", "proyectar.modo")
 
 
 def leer_modo():

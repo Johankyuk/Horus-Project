@@ -1,15 +1,15 @@
 #!/bin/bash
-# Descripcion: Setup maestro - CachyOS -> Kyu OS (Niri + Noctalia)
+# Descripcion: Setup maestro - CachyOS -> Horus Project (Niri + Noctalia)
 #               Instala paquetes, despliega configs y aplica branding.
-# Uso:   La interfaz son los atajos kyu-* (se despliegan en la 1ª corrida y quedan
+# Uso:   La interfaz son los atajos horus-* (se despliegan en la 1ª corrida y quedan
 #        en PATH). Cada atajo es este script con su modo:
-#          kyu-setup       corrida completa (muestra el plan y pide confirmación)
-#          kyu-dry         solo el plan, no toca nada
-#          kyu-check       healthcheck post-setup
-#          kyu-sync        vuelca tu ~/.config al repo (para commitear)
-#          kyu-solo SECS   corre solo esas secciones (kyu-solo lista para verlas;
-#                          por nombre o número: kyu-solo cursor · kyu-solo 7,9)
-#          kyu-limpia      borra restos de versiones viejas del setup
+#          horus-start       corrida completa (muestra el plan y pide confirmación)
+#          horus-dry         solo el plan, no toca nada
+#          horus-check       healthcheck post-setup
+#          horus-sync        vuelca tu ~/.config al repo (para commitear)
+#          horus-solo SECS   corre solo esas secciones (horus-solo lista para verlas;
+#                          por nombre o número: horus-solo cursor · horus-solo 7,9)
+#          horus-clean      borra restos de versiones viejas del setup
 #        La 1ª vez, sin atajos aún:  bash setup_master.sh
 # Avanzado (flags de uso puntual, sin atajo propio):
 #          --skip-update   no corre 'pacman -Syu' al inicio (iterar rápido)
@@ -21,17 +21,17 @@
 #   config/            <- dotfiles que se despliegan en ~/.config
 #     niri/  noctalia/  foot/
 #   local-bin/         <- scripts personales -> ~/.local/bin (puede ir vacio)
-#   sugar-dark-kyu/    <- tema SDDM pre-customizado (lo aportas tu)
+#   sugar-dark-horus/    <- tema SDDM pre-customizado (lo aportas tu)
 #   PFP/  Wallpapers/  <- recursos personales (los aportas tu)
 #
 # La carpeta config/ es la MISMA fuente que alimenta airootfs/etc/skel/ en
-# el proyecto kyu-os (ISO). Edita las configs ahi, no en dos lados.
+# el proyecto horus (ISO). Edita las configs ahi, no en dos lados.
 
 set -uo pipefail
 
 # ── Utilidades de output ─────────────────────────────────────
 PURPLE='\033[0;35m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; RED='\033[0;31m'; NC='\033[0m'
-log()    { echo -e "${PURPLE}[kyu]${NC} $1"; }
+log()    { echo -e "${PURPLE}[horus]${NC} $1"; }
 ok()     { echo -e "${GREEN}[ok]${NC} $1"; }
 warn()   { echo -e "${YELLOW}[warn]${NC} $1"; }
 err()    { echo -e "${RED}[err]${NC} $1"; }
@@ -62,18 +62,18 @@ RELOGIN_RAZONES=()      # qué cambió que pide re-login
 REBOOT_RAZONES=()       # qué cambió que pide reinicio
 
 # ── ¿El setup ya corrió antes en esta máquina? Se detecta por el shortcut
-#    kyu-setup, que sec_configs despliega en la primera corrida. Hay que capturarlo
+#    horus-start, que sec_configs despliega en la primera corrida. Hay que capturarlo
 #    AHORA, antes de que esa sección lo cree, o al final siempre parecería existir.
-KYU_SETUP_PREVIO=0
-[ -f "$HOME/.local/bin/kyu-setup" ] && KYU_SETUP_PREVIO=1
+HORUS_SETUP_PREVIO=0
+[ -f "$HOME/.local/bin/horus-start" ] && HORUS_SETUP_PREVIO=1
 
 # ── Flags ────────────────────────────────────────────────────
-SKIP_UPDATE=0; DRY_RUN=0; DO_CHECK=0; DO_BATERIA=1; BAT_LIMIT=80; DO_CAPTURAR=0; DO_LIMPIAR=0; SOLO_RAW=""; KYU_PREVIEW=0
+SKIP_UPDATE=0; DRY_RUN=0; DO_CHECK=0; DO_BATERIA=1; BAT_LIMIT=80; DO_CAPTURAR=0; DO_LIMPIAR=0; SOLO_RAW=""; HORUS_PREVIEW=0
 for arg in "$@"; do
     case "$arg" in
         --skip-update)  SKIP_UPDATE=1 ;;
         --dry-run)      DRY_RUN=1 ;;
-        --preview)      KYU_PREVIEW=1 ;;
+        --preview)      HORUS_PREVIEW=1 ;;
         --check)        DO_CHECK=1 ;;
         --capturar)     DO_CAPTURAR=1 ;;
         --no-bateria)   DO_BATERIA=0 ;;
@@ -82,14 +82,14 @@ for arg in "$@"; do
         --solo=*)       SOLO_RAW="${arg#*=}" ;;
         -h|--help)
             cat <<'EOF'
-Kyu OS — setup maestro. Interfaz: atajos kyu-* (en PATH tras la 1ª corrida).
-  kyu-setup       corrida completa (muestra el plan y pide confirmación)
-  kyu-dry         solo el plan, no toca nada
-  kyu-check       healthcheck post-setup
-  kyu-sync        vuelca tu ~/.config al repo (para commitear)
-  kyu-solo SECS   corre solo esas secciones  (kyu-solo lista para verlas)
-  kyu-limpia      borra restos de versiones viejas del setup
-  kyu-update      actualiza mirrors + repos/AUR + flatpaks
+Horus Project — setup maestro. Interfaz: atajos horus-* (en PATH tras la 1ª corrida).
+  horus-start       corrida completa (muestra el plan y pide confirmación)
+  horus-dry         solo el plan, no toca nada
+  horus-check       healthcheck post-setup
+  horus-sync        vuelca tu ~/.config al repo (para commitear)
+  horus-solo SECS   corre solo esas secciones  (horus-solo lista para verlas)
+  horus-clean      borra restos de versiones viejas del setup
+  horus-update      actualiza mirrors + repos/AUR + flatpaks
 Avanzado (flags de uso puntual, sin atajo):
   --preview       muestra el asistente gum SIN instalar nada (verlo sin reinstalar)
   --skip-update   no corre 'pacman -Syu' (iterar rápido)
@@ -123,7 +123,7 @@ LOCALBIN_DIR="$SCRIPT_DIR/local-bin"
 # Los logs van a una carpeta DEDICADA fuera del repo (estándar XDG para logs de
 # usuario). El archivo concreto, uno por corrida, se nombra y crea junto al exec
 # de más abajo —así --dry-run/--check no dejan logs vacíos.
-LOG_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/kyu-os/logs"
+LOG_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/horus/logs"
 
 # ── AUR helper (una sola vez) ────────────────────────────────
 # Solo es imprescindible para INSTALAR (flujo normal). Los modos --dry-run,
@@ -154,7 +154,7 @@ PKGS_REPO=(
     cachyos-gaming-meta
     # Iconos (el recoloreado violet usa papirus-folders, que es AUR)
     papirus-icon-theme
-    # SDDM (el tema sugar-dark-kyu ya no usa QtGraphicalEffects; qt5-quickcontrols2
+    # SDDM (el tema sugar-dark-horus ya no usa QtGraphicalEffects; qt5-quickcontrols2
     # se mantiene por si pruebas el greeter en modo Qt5)
     sddm qt5-quickcontrols2
     # Portal del selector de archivos (dialogos con tema morado)
@@ -178,7 +178,7 @@ PKGS_AUR=(
     noctalia-shell
     lavat-git cbonsai
     catppuccin-gtk-theme-mocha papirus-folders bibata-cursor-theme rar
-    wob                             # OSD del brillo del teclado (kyu-kbd-osd)
+    wob                             # OSD del brillo del teclado (horus-kbd-osd)
     # Espejo de pantalla para presentaciones (modo 'espejo' de ~/.local/bin/proyectar).
     # Niri no clona salidas de forma nativa; wl-mirror es el unico camino (fragil).
     wl-mirror
@@ -335,7 +335,7 @@ _pend_txt() { local p; p=$(faltantes "$@"); [ -n "$p" ] && echo "$p" || echo "(n
 #   • foot difuminado-> ~/.config/foot/foot.ini con alpha=0.70 (para que el blur lea)
 #   • Noctalia 12h  -> settings.json con use12hourFormat en true
 #   • SDDM 12h      -> theme.conf desplegado con HourFormat= descomentado
-#   • prompt mínimo -> marca '# kyu-prompt' presente en ~/.bashrc
+#   • prompt mínimo -> marca '# horus-prompt' presente en ~/.bashrc
 _pend_extras() {
     local pend=()
     # shellcheck disable=SC2178  # 'out' es string; falso positivo por el += de abajo
@@ -347,9 +347,9 @@ _pend_extras() {
         || pend+=("foot fondo difuminado")
     grep -qE 'use12hourFormat[^,]*true' "$HOME/.config/noctalia/settings.json" 2>/dev/null \
         || pend+=("reloj 12h Noctalia")
-    grep -qE '^[[:space:]]*HourFormat=' /usr/share/sddm/themes/sugar-dark-kyu/theme.conf 2>/dev/null \
+    grep -qE '^[[:space:]]*HourFormat=' /usr/share/sddm/themes/sugar-dark-horus/theme.conf 2>/dev/null \
         || pend+=("reloj 12h SDDM")
-    grep -q '# kyu-prompt' "$HOME/.bashrc" 2>/dev/null \
+    grep -q '# horus-prompt' "$HOME/.bashrc" 2>/dev/null \
         || pend+=("prompt minimalista")
     # shellcheck disable=SC2128
     for e in "${pend[@]}"; do [ -n "$out" ] && out+=" · "; out+="$e"; done
@@ -387,7 +387,7 @@ declare -A SEC_DESC=(
     [gtk]="GTK, iconos y Thunar"
     [cursor]="Cursor morado Bibata"
     [sddm]="SDDM Sugar-Dark"
-    [branding]="Branding Kyu OS (systemd-boot)"
+    [branding]="Branding Horus Project (systemd-boot)"
     [steam]="Steam (wrapper anti-pantalla-negra del cliente)"
     [teclado]="RGB del teclado (regla udev ITE5570)"
     [recursos]="Recursos + batería"
@@ -395,7 +395,7 @@ declare -A SEC_DESC=(
     [sesion]="Sesión: tecla power/tapa → bloqueo (sin suspender)"
     [flatpak]="Flatpak + remoto Flathub"
     [zen]="Navegador Zen: tema Horus, prefs y extensiones"
-    [rendimiento]="Rendimiento gráfico (supergfxctl, nvtop, kyu-power)"
+    [rendimiento]="Rendimiento gráfico (supergfxctl, nvtop, horus-power)"
     [gaming]="Gaming (juegos web nostálgicos) — reservado"
 )
 # Qué necesita cada sección. Con --solo, si NINGUNA de las elegidas requiere
@@ -470,13 +470,13 @@ fi
 
 # MODO --check : healthcheck post-setup
 if [ "$DO_CHECK" -eq 1 ]; then
-    section "Healthcheck Kyu OS"
+    section "Healthcheck Horus Project"
     chk(){ if eval "$2" &>/dev/null; then ok "$1"; else warn "$1 — FALTA"; fi; }
     chk "Niri instalado"               "pacman -Q niri"
     chk "Noctalia instalado"           "pacman -Q noctalia-shell"
     chk "Config de Niri desplegada"    "test -f $HOME/.config/niri/config.kdl"
     chk "settings.json de Noctalia"    "test -f $HOME/.config/noctalia/settings.json"
-    chk "Color scheme 'Kyu OS'"        "test -f '$HOME/.config/noctalia/colorschemes/Kyu OS/Kyu OS.json'"
+    chk "Color scheme 'Horus Project'"        "test -f '$HOME/.config/noctalia/colorschemes/Horus Project/Horus Project.json'"
     chk "foot.ini desplegado"          "test -f $HOME/.config/foot/foot.ini"
     chk "foot en sintaxis moderna"     "grep -qxF '[colors-dark]' $HOME/.config/foot/foot.ini"
     chk "foot fondo difuminado"        "grep -qE '^alpha=0?\.[0-9]' $HOME/.config/foot/foot.ini"
@@ -484,10 +484,10 @@ if [ "$DO_CHECK" -eq 1 ]; then
     chk "Cursor morado generado"       "test -d $HOME/.icons/Bibata-Modern-Purple/cursors"
     chk "Fuente Nerd (Meslo)"          "pacman -Q ttf-meslo-nerd"
     chk "SDDM habilitado"              "systemctl is-enabled sddm"
-    chk "Tema SDDM sugar-dark-kyu"     "test -d /usr/share/sddm/themes/sugar-dark-kyu"
-    chk "SDDM reloj 12h (HourFormat)"  "grep -qE '^HourFormat=' /usr/share/sddm/themes/sugar-dark-kyu/theme.conf"
+    chk "Tema SDDM sugar-dark-horus"     "test -d /usr/share/sddm/themes/sugar-dark-horus"
+    chk "SDDM reloj 12h (HourFormat)"  "grep -qE '^HourFormat=' /usr/share/sddm/themes/sugar-dark-horus/theme.conf"
     chk "Fastfetch logo"               "test -f $HOME/.config/fastfetch/logo.txt"
-    chk "Prompt minimalista (PS1)"     "grep -q '# kyu-prompt' $HOME/.bashrc"
+    chk "Prompt minimalista (PS1)"     "grep -q '# horus-prompt' $HOME/.bashrc"
     chk "Utilidad de proyección"       "test -x $HOME/.local/bin/proyectar"
     chk "Límite de batería (servicio)" "systemctl is-enabled battery-charge-limit.service"
     chk "Kernel: imagen presente en /boot"  "ls /boot/vmlinuz-* &>/dev/null"
@@ -536,13 +536,13 @@ if [ "$DO_CAPTURAR" -eq 1 ]; then
 
     # Noctalia: SOLO settings.json (la carpeta colorschemes/ la genera el setup,
     # no se captura). Se normaliza igual que en el despliegue para que el repo
-    # quede canónico pase lo que pase en el activo: scheme fijo "Kyu OS" y sin
+    # quede canónico pase lo que pase en el activo: scheme fijo "Horus Project" y sin
     # colores de wallpaper. Las rutas se dejan; el despliegue las reescribe a
     # $SCRIPT_DIR en destino.
     _sns="$HOME/.config/noctalia/settings.json"; _dns="$CONFIG_DIR/noctalia/settings.json"
     if [ -f "$_sns" ]; then
         _t=$(mktemp)
-        sed -e 's/"predefinedScheme": *"[^"]*"/"predefinedScheme": "Kyu OS"/' \
+        sed -e 's/"predefinedScheme": *"[^"]*"/"predefinedScheme": "Horus Project"/' \
             -e 's/"useWallpaperColors": *true/"useWallpaperColors": false/' \
             -e 's/"use12hourFormat": *false/"use12hourFormat": true/' \
             "$_sns" > "$_t"
@@ -575,7 +575,7 @@ fi
 # MODO --limpiar : borra restos de versiones viejas del setup
 # Antes el setup duplicaba PFP/Wallpapers a ~/Imágenes y dejaba un log único en
 # el repo. Ya no: las imágenes viven en el propio repo (Noctalia las lee de ahí)
-# y los logs van a ~/.local/state/kyu-os/logs. Esto borra esos restos. Pide
+# y los logs van a ~/.local/state/horus/logs. Esto borra esos restos. Pide
 # confirmación y NO toca nada del sistema. (Reemplaza al viejo limpiar_huerfanos.sh.)
 if [ "$DO_LIMPIAR" -eq 1 ]; then
     section "Limpieza de huérfanos"
@@ -610,27 +610,27 @@ fi
 # PLAN + CONFIRMACION (flujo completo pregunta; --solo va directo)
 if [ "${#SOLO_SECS[@]}" -eq 0 ]; then
     # ── Asistente gum: idioma → modo → paquetes → tema ───────
-    # La UI vive en lib/kyu-ui.sh (la comparte preview/kyu-ui-preview.sh).
+    # La UI vive en lib/ui.sh (la comparte preview/ui-preview.sh).
     # El asistente NO instala: solo decide qué secciones corren y deja la
     # ejecución a la maquinaria de siempre (SELECCION + bucle de despacho).
-    if [ ! -f "$SCRIPT_DIR/lib/kyu-ui.sh" ]; then
-        err "Falta $SCRIPT_DIR/lib/kyu-ui.sh (capa de interfaz del instalador)."; exit 1
+    if [ ! -f "$SCRIPT_DIR/lib/ui.sh" ]; then
+        err "Falta $SCRIPT_DIR/lib/ui.sh (capa de interfaz del instalador)."; exit 1
     fi
     # shellcheck source=/dev/null
-    source "$SCRIPT_DIR/lib/kyu-ui.sh"
-    KYU_DGPU=0;  lspci 2>/dev/null | grep -qi nvidia && KYU_DGPU=1
-    KYU_SDBOOT=1; bootctl is-installed &>/dev/null || KYU_SDBOOT=0
-    [ "$KYU_PREVIEW" -eq 1 ] && export KYU_UI_PREVIEW=1
+    source "$SCRIPT_DIR/lib/ui.sh"
+    HORUS_DGPU=0;  lspci 2>/dev/null | grep -qi nvidia && HORUS_DGPU=1
+    HORUS_SDBOOT=1; bootctl is-installed &>/dev/null || HORUS_SDBOOT=0
+    [ "$HORUS_PREVIEW" -eq 1 ] && export HORUS_UI_PREVIEW=1
 
-    if ! kyu_wizard; then exit 0; fi   # el asistente ya avisó si se canceló
+    if ! horus_wizard; then exit 0; fi   # el asistente ya avisó si se canceló
 
     # Mapear elecciones → SELECCION (núcleo siempre; orden canónico)
     declare -A PKG_ON=([nucleo]=1)
-    case "$KYU_MODE" in
+    case "$HORUS_MODE" in
         full)   PKG_ON[cosmeticos]=1; PKG_ON[apps]=1; PKG_ON[gaming]=1
-                [ "$KYU_DGPU" = "1" ] && PKG_ON[rendimiento]=1 ;;
+                [ "$HORUS_DGPU" = "1" ] && PKG_ON[rendimiento]=1 ;;
         min)    : ;;   # solo núcleo
-        custom) for _p in "${KYU_PKGS[@]}"; do PKG_ON["$_p"]=1; done ;;
+        custom) for _p in "${HORUS_PKGS[@]}"; do PKG_ON["$_p"]=1; done ;;
     esac
     SELECCION=()
     for _s in "${SECCIONES[@]}"; do
@@ -638,9 +638,9 @@ if [ "${#SOLO_SECS[@]}" -eq 0 ]; then
     done
 
     # Modo preview: enseña el plan resultante y sale sin tocar nada.
-    if [ "$KYU_PREVIEW" -eq 1 ]; then
+    if [ "$HORUS_PREVIEW" -eq 1 ]; then
         section "PLAN (preview — no se instala nada)"
-        echo -e "  ${PURPLE}Idioma:${NC} $KYU_LANG_NAME   ${PURPLE}Modo:${NC} $KYU_MODE   ${PURPLE}Tema:${NC} ${KYU_THEME:-(sin tema)}"
+        echo -e "  ${PURPLE}Idioma:${NC} $HORUS_LANG_NAME   ${PURPLE}Modo:${NC} $HORUS_MODE   ${PURPLE}Tema:${NC} ${HORUS_THEME:-(sin tema)}"
         echo -e "  ${PURPLE}Secciones que correrían (${#SELECCION[@]}):${NC}"
         for _t in "${SELECCION[@]}"; do echo "    • $_t — ${SEC_DESC[$_t]}"; done
         echo ""; ok "Preview terminada — no se instaló ni cambió nada."
@@ -721,7 +721,7 @@ sec_snapshot() {
 # CachyOS trae btrfs + snapper + limine. Un snapshot ANTES de tocar el sistema
 # permite revertir si algo sale mal. Solo si snapper esta configurado.
 if command -v snapper &>/dev/null && sudo snapper list-configs 2>/dev/null | grep -q root; then
-    sudo snapper -c root create -d "pre setup_master Kyu OS" \
+    sudo snapper -c root create -d "pre setup_master Horus Project" \
         && ok "Snapshot 'pre setup_master' creado (revierte con snapper si hace falta)." \
         || nota "No se pudo crear snapshot; continúo de todos modos."
 else
@@ -964,10 +964,10 @@ fi
 # SECCIÓN «generables» — GENERABLES KYU (colorscheme, fastfetch, steam, alias)
 sec_generables() {
 
-# --- Color scheme "Kyu OS" para Noctalia (paleta morada fija) ---
-NOCTALIA_SCHEME_DIR="$HOME/.config/noctalia/colorschemes/Kyu OS"
+# --- Color scheme "Horus Project" para Noctalia (paleta morada fija) ---
+NOCTALIA_SCHEME_DIR="$HOME/.config/noctalia/colorschemes/Horus Project"
 NOCTALIA_SETTINGS="$HOME/.config/noctalia/settings.json"
-if write_if_changed "$NOCTALIA_SCHEME_DIR/Kyu OS.json" "Color scheme 'Kyu OS'" << 'NOCTALIA_EOF'
+if write_if_changed "$NOCTALIA_SCHEME_DIR/Horus Project.json" "Color scheme 'Horus Project'" << 'NOCTALIA_EOF'
 {
   "dark": {
     "mPrimary": "#7a2be8", "mOnPrimary": "#140622",
@@ -1014,7 +1014,7 @@ then
 fi
 
 # settings.json de Noctalia: se parte del repo, se aplican los parches (scheme
-# fijo "Kyu OS", sin colores de wallpaper, y las rutas de wallpaper/avatar
+# fijo "Horus Project", sin colores de wallpaper, y las rutas de wallpaper/avatar
 # reescritas a la carpeta REAL del repo, $SCRIPT_DIR, donde viven Wallpapers/ y
 # PFP/). Usar $SCRIPT_DIR en vez de una ruta fija evita romper si el usuario no
 # es "kyu" (VM, ISO) y mantiene todo dentro de ~/Documentos/Configs en tu equipo.
@@ -1022,11 +1022,11 @@ fi
 if [ -f "$CONFIG_DIR/noctalia/settings.json" ]; then
     _ns_tmp=$(mktemp)
     cp "$CONFIG_DIR/noctalia/settings.json" "$_ns_tmp"
-    sed -i -e 's/"predefinedScheme": *"[^"]*"/"predefinedScheme": "Kyu OS"/' \
+    sed -i -e 's/"predefinedScheme": *"[^"]*"/"predefinedScheme": "Horus Project"/' \
            -e 's/"useWallpaperColors": *true/"useWallpaperColors": false/' \
            -e 's/"use12hourFormat": *false/"use12hourFormat": true/' \
-           -e "s#/home/kyu/kyu-os/Wallpapers#$SCRIPT_DIR/Wallpapers#g" \
-           -e "s#/home/kyu/kyu-os/PFP#$SCRIPT_DIR/PFP#g" \
+           -e "s#/home/kyu/horus/Wallpapers#$SCRIPT_DIR/Wallpapers#g" \
+           -e "s#/home/kyu/horus/PFP#$SCRIPT_DIR/PFP#g" \
            "$_ns_tmp"
     # Backup de la versión previa solo si de verdad vamos a pisarla con algo distinto.
     if [ -f "$NOCTALIA_SETTINGS" ] && ! diff -q "$_ns_tmp" "$NOCTALIA_SETTINGS" &>/dev/null; then
@@ -1047,7 +1047,7 @@ fi
 # paleta desde el scheme (workaround oficial). Solo si Noctalia está corriendo.
 if command -v qs >/dev/null 2>&1 && qs -c noctalia-shell ipc call darkMode toggle >/dev/null 2>&1; then
     sleep 0.4; qs -c noctalia-shell ipc call darkMode toggle >/dev/null 2>&1 || true
-    did "Noctalia: paleta regenerada desde el scheme 'Kyu OS'."
+    did "Noctalia: paleta regenerada desde el scheme 'Horus Project'."
 else
     nota "Noctalia no respondió al IPC (¿no está corriendo?); al entrar a la sesión re-aplica el scheme en Ajustes → Color Scheme, o corre dos veces: qs -c noctalia-shell ipc call darkMode toggle"
 fi
@@ -1056,51 +1056,20 @@ fi
 #     la sección «steam» (necesita sudo para /usr/local/bin; no encaja en esta
 #     sección sin privilegios). Ver sec_steam o: setup_master.sh --solo=steam
 
-# --- Fastfetch: logo ASCII morado + config ---
+# --- Fastfetch: logo (ojo de Horus) + config, desde branding/ ---
+# Fuente unica: branding/horus-ascii.txt (placeholders $1/$2) y
+# branding/config.jsonc (colores base morados; horus-theme los rota al tema).
 mkdir -p "$HOME/.config/fastfetch"
-python3 << 'PYEOF' | write_if_changed "$HOME/.config/fastfetch/logo.txt" "Logo ASCII de fastfetch"
-import os, sys
-ascii_art = r"""                         %                        
-                        %##                       
-                       #%###                      
-                     %##% ###                     
-               %%##  ##    ### ####               
-            %#####  ##  ### ###  ####%            
-          %%##    ###  ####% ###    ####          
-         ###   # ###           ###%#   ###        
-       ###   ##   ##############  %###  ###       
-      ###  #   ######       %######  ### %##%     
-     %##  #######  ############  ######## ###     
-     ##%#      ###### ###### ########      ###    
-    %##  ########      ####      #########  ##%   
-    %## ##  %#########       #######      %###%   
-    %#   #    ##################  %#% ### % ###   
-    ##% %%    ###%%####            ##% ###  ##%   
-    ## %##  ######%  ##### %# ##    ### ###%##%   
-     %###  # %######    #######      ### %##%%    
-     ###  ##   ######                 ###  ##%    
-    ###  ####### ############  ###########  #%%   
-   ###              #######                  %%%  
-  %%%###############     %#################%%%%%% 
-           %%%   %%%%%       %####  %%%%          
-            %####   ##########%  %####            
-               %###################               
-                    %%%####%%%                    """
-C1='\033[38;2;200;166;249m'; C2='\033[38;2;200;166;249m'; RST='\033[0m'
-lines=[]
-for line in ascii_art.split('\n'):
-    s=''
-    for ch in line:
-        s += C1+'%'+RST if ch=='%' else (C2+'#'+RST if ch=='#' else ch)
-    lines.append(s)
-sys.stdout.write('\n'.join(lines))
-PYEOF
+write_if_changed "$HOME/.config/fastfetch/logo.txt" "Logo ASCII de fastfetch" \
+    < "$SCRIPT_DIR/branding/horus-ascii.txt"
+write_if_changed "$HOME/.config/fastfetch/config.jsonc" "Config de fastfetch" \
+    < "$SCRIPT_DIR/branding/config.jsonc"
 python3 << 'PYEOF' | write_if_changed "$HOME/.config/fastfetch/config.jsonc" "Config de fastfetch"
 import os, json, sys
 config={"$schema":"https://github.com/fastfetch-cli/fastfetch/raw/dev/doc/json_schema.json",
   "logo":{"source":"~/.config/fastfetch/logo.txt","type":"file","padding":{"right":4}},
   "display":{"color":{"title":"default","keys":"38;2;200;166;249","output":"default","separator":"default"},"percent":{"color":{"green":"38;2;200;166;249","yellow":"38;2;200;166;249","red":"38;2;200;166;249"}}},
-  "modules":[{"type":"os","key":"OS","format":"Kyu OS"},"host","kernel","uptime","packages",
+  "modules":[{"type":"os","key":"OS","format":"Horus Project"},"host","kernel","uptime","packages",
     "shell","display","wm","theme","font","cursor","terminal","terminalfont","cpu","gpu",
     "memory","swap",{"type":"disk","folders":"/"},{"type":"localip","showIpv4":True},
     "battery","locale"]}
@@ -1117,15 +1086,15 @@ fi
 # --- Prompt minimalista (quita el [usuario@host dir]$ por defecto de bash) ---
 # El prompt lo arma bash con la variable PS1; foot solo lo dibuja, no puede
 # quitarlo por su cuenta. Se fija al FINAL de ~/.bashrc para PISAR el default del
-# sistema. Guard por marca '# kyu-prompt' => idempotente (no se reañade en cada
+# sistema. Guard por marca '# horus-prompt' => idempotente (no se reañade en cada
 # corrida). Queda vacío; si lo quieres mínimo en vez de vacío, cambia PS1='' por
 # PS1='$ ' (o lo que sea) en el heredoc de abajo.
-if grep -q '# kyu-prompt' ~/.bashrc 2>/dev/null; then
+if grep -q '# horus-prompt' ~/.bashrc 2>/dev/null; then
     skip "Prompt minimalista ya estaba en ~/.bashrc."
 else
     cat >> ~/.bashrc << 'BASHRC_PS1_EOF'
 
-# kyu-prompt
+# horus-prompt
 PS1=''
 BASHRC_PS1_EOF
     did "Prompt minimalista (PS1) añadido a ~/.bashrc."
@@ -1386,7 +1355,7 @@ fi
 
 # SECCIÓN «sddm» — SDDM Sugar-Dark (morado, español)
 sec_sddm() {
-local KYU_THEME="sugar-dark-kyu"; local THEME_SRC="$SCRIPT_DIR/$KYU_THEME"; local THEME_DEST="/usr/share/sddm/themes/$KYU_THEME"
+local HORUS_THEME="sugar-dark-horus"; local THEME_SRC="$SCRIPT_DIR/$HORUS_THEME"; local THEME_DEST="/usr/share/sddm/themes/$HORUS_THEME"
 _sddm_cambio=0
 
 # Reloj 12h (AM/PM) en el greeter: la variable HourFormat del theme.conf (lo que
@@ -1409,10 +1378,10 @@ _sddm_hourformat() {  # $1 = theme.conf
 [ -d "$THEME_SRC" ] && _sddm_hourformat "$THEME_SRC/theme.conf"
 if [ -d "$THEME_SRC" ]; then
     if [ -d "$THEME_DEST" ] && sudo diff -rq "$THEME_SRC" "$THEME_DEST" &>/dev/null; then
-        skip "Tema SDDM '$KYU_THEME' ya estaba al día."
+        skip "Tema SDDM '$HORUS_THEME' ya estaba al día."
     else
         sudo rm -rf "$THEME_DEST"; sudo cp -r "$THEME_SRC" "$THEME_DEST" \
-            && { did "Tema SDDM '$KYU_THEME' desplegado."; _sddm_cambio=1; } \
+            && { did "Tema SDDM '$HORUS_THEME' desplegado."; _sddm_cambio=1; } \
             || fallo "No se pudo desplegar el tema SDDM."
     fi
 else
@@ -1420,11 +1389,11 @@ else
     nota "SDDM quedará con el tema por defecto."
 fi
 sudo mkdir -p /etc/sddm.conf.d
-if ! sudo grep -q "Current=$KYU_THEME" /etc/sddm.conf.d/theme.conf 2>/dev/null; then
-    sudo bash -c "printf '[Theme]\nCurrent=$KYU_THEME\n' > /etc/sddm.conf.d/theme.conf" \
-        && { did "SDDM apuntado a '$KYU_THEME'."; _sddm_cambio=1; }
+if ! sudo grep -q "Current=$HORUS_THEME" /etc/sddm.conf.d/theme.conf 2>/dev/null; then
+    sudo bash -c "printf '[Theme]\nCurrent=$HORUS_THEME\n' > /etc/sddm.conf.d/theme.conf" \
+        && { did "SDDM apuntado a '$HORUS_THEME'."; _sddm_cambio=1; }
 else
-    skip "SDDM ya apuntaba a '$KYU_THEME'."
+    skip "SDDM ya apuntaba a '$HORUS_THEME'."
 fi
 if systemctl is-enabled sddm &>/dev/null; then
     skip "Servicio SDDM ya habilitado."
@@ -1449,7 +1418,7 @@ fi
 #      processes"), y eso es irreductible sin Plymouth. 'autogen' lo respeta en
 #      cada update de kernel.
 #      DEFAULT_ENTRY="manual" evita que pise 'default @saved'.
-#   2) Un script propio (kyu-os-title) reescribe el título a "Kyu OS" y garantiza el
+#   2) Un script propio (horus-title) reescribe el título a "Horus Project" y garantiza el
 #      silencio; un hook de pacman (zzz-, corre DESPUÉS de sdboot-kernel-update.hook)
 #      lo reaplica tras cada autogen.
 # Además se desactiva Plymouth por completo (fuera del initramfs Y con
@@ -1517,24 +1486,26 @@ else
         fi
     fi
 
-    # --- 3. Script de branding (título Kyu OS + silencio garantizado) ---
-    sudo tee /usr/local/bin/kyu-os-title >/dev/null <<'KYUEOF'
+    # --- 3. Script de branding (título Horus Project + silencio garantizado) ---
+    sudo tee /usr/local/bin/horus-title >/dev/null <<'HORUSEOF'
 #!/bin/bash
-# Reaplica branding Kyu OS a las entradas de systemd-boot tras sdboot-manage:
-#   - título "Kyu OS" (sdboot-manage lo deriva del nombre del kernel; esto lo corrige)
+# Reaplica branding Horus Project a las entradas de systemd-boot tras sdboot-manage:
+#   - título "Horus Project" (sdboot-manage lo deriva del nombre del kernel; esto lo corrige)
 #   - arranque silencioso (negro), sin tokens duplicados ni 'splash'
-# Lo instala/reaplica el setup (sección branding) y el hook zzz-kyu-branding.
+# Lo instala/reaplica el setup (sección branding) y el hook zzz-horus-branding.
 set -u
+# Distro base real desde os-release (ya sin identidad falsa): "Horus Project (CachyOS)"
+BASE=$(. /etc/os-release 2>/dev/null; echo "${NAME:-Linux}")
 SILENCIO=(quiet loglevel=3 rd.udev.log_level=3 vt.global_cursor_default=0 systemd.show_status=false)
 QUITAR=(splash)
 shopt -s nullglob
 for f in /boot/loader/entries/*.conf; do
   base=$(basename "$f" .conf)
   case "$base" in
-    *lts*fallback*) t="Kyu OS (LTS, fallback)";;
-    *lts*)          t="Kyu OS (LTS)";;
-    *fallback*)     t="Kyu OS (fallback)";;
-    *)              t="Kyu OS";;
+    *lts*fallback*) t="Horus Project ($BASE, LTS, fallback)";;
+    *lts*)          t="Horus Project ($BASE, LTS)";;
+    *fallback*)     t="Horus Project ($BASE, fallback)";;
+    *)              t="Horus Project ($BASE)";;
   esac
   if grep -q '^title' "$f"; then sed -i "s|^title.*|title $t|" "$f"
   else sed -i "1i title $t" "$f"; fi
@@ -1550,12 +1521,12 @@ for f in /boot/loader/entries/*.conf; do
   out+=("${SILENCIO[@]}")
   sed -i "s|^options.*|options ${out[*]}|" "$f"
 done
-KYUEOF
-    sudo chmod +x /usr/local/bin/kyu-os-title
+HORUSEOF
+    sudo chmod +x /usr/local/bin/horus-title
 
     # --- 4. Hook: reaplica el branding tras cada autogen (update de kernel) ---
     sudo mkdir -p /etc/pacman.d/hooks
-    sudo tee /etc/pacman.d/hooks/zzz-kyu-branding.hook >/dev/null <<'KYUEOF'
+    sudo tee /etc/pacman.d/hooks/zzz-horus-branding.hook >/dev/null <<'HORUSEOF'
 [Trigger]
 Type = Path
 Operation = Install
@@ -1564,27 +1535,27 @@ Target = usr/lib/modules/*/vmlinuz
 Target = boot/vmlinuz*
 
 [Action]
-Description = Reaplicando branding Kyu OS en el menu de arranque
+Description = Reaplicando branding Horus Project en el menu de arranque
 When = PostTransaction
-Exec = /usr/local/bin/kyu-os-title
-KYUEOF
+Exec = /usr/local/bin/horus-title
+HORUSEOF
 
     # --- 5. Limpieza de intentos previos (branding viejo de systemd-boot/Limine) ---
-    for h in 99-kyu-os-branding.hook zz-kyu-os-branding.hook; do
+    for h in 99-horus-branding.hook zz-horus-branding.hook; do
         sudo test -f "/etc/pacman.d/hooks/$h" && sudo rm -f "/etc/pacman.d/hooks/$h" && nota "Hook viejo de branding retirado: $h"
     done
-    sudo test -f /usr/local/bin/kyu-os-branding && sudo rm -f /usr/local/bin/kyu-os-branding
+    sudo test -f /usr/local/bin/horus-branding && sudo rm -f /usr/local/bin/horus-branding
 
     # --- 6. Aplicar ahora sobre las entradas existentes ---
-    if sudo /usr/local/bin/kyu-os-title; then
+    if sudo /usr/local/bin/horus-title; then
         if [ "$_cambio" -eq 1 ]; then
-            did "Branding Kyu OS aplicado (systemd-boot: título + boot negro)."
+            did "Branding Horus Project aplicado (systemd-boot: título + boot negro)."
             NEED_REBOOT=1; REBOOT_RAZONES+=("branding de arranque")
         else
-            skip "Branding Kyu OS ya estaba aplicado."
+            skip "Branding Horus Project ya estaba aplicado."
         fi
     else
-        fallo "kyu-os-title falló; revisa /boot/loader/entries a mano."
+        fallo "horus-title falló; revisa /boot/loader/entries a mano."
     fi
 fi
 }
@@ -1620,7 +1591,7 @@ else
     _wrap_tmp=$(mktemp)
     cat > "$_wrap_tmp" <<'STEAMWRAP_EOF'
 #!/usr/bin/env bash
-# Wrapper de Steam para Kyu OS — antepone -cef-disable-gpu a toda invocación de
+# Wrapper de Steam para Horus Project — antepone -cef-disable-gpu a toda invocación de
 # 'steam' para evitar el crash del proceso GPU de Chromium (CEF) en la iGPU Intel,
 # que deja el cliente EN NEGRO al arrancar en frío desde el .desktop de un juego.
 # Steam es de instancia única: basta con garantizar que SIEMPRE arranque con el
@@ -1674,7 +1645,7 @@ fi
 }
 
 # SECCIÓN «teclado» — RGB DEL TECLADO (regla udev ITE5570)
-# El control RGB (kyu-kbd-color) escribe al teclado por /dev/hidrawN. Sin permisos
+# El control RGB (horus-kbd-color) escribe al teclado por /dev/hidrawN. Sin permisos
 # solo root puede hacerlo. Esta regla da acceso vía el grupo 'input' + el tag
 # uaccess. DOS lecciones aprendidas a fuego, codificadas aquí:
 #   • La regla DEBE numerarse <73 (es 60-...) para que el tag uaccess lo procese
@@ -1684,11 +1655,11 @@ fi
 #     instala/cambia la regla, se marca NEED_REBOOT.
 # El grupo 'input' + MODE=0660 es el respaldo por si uaccess fallara.
 sec_teclado() {
-    local src="$SCRIPT_DIR/udev/60-kyu-kbd.rules"
-    local dst="/etc/udev/rules.d/60-kyu-kbd.rules"
+    local src="$SCRIPT_DIR/udev/60-horus-kbd.rules"
+    local dst="/etc/udev/rules.d/60-horus-kbd.rules"
 
     if [ ! -f "$src" ]; then
-        nota "udev/60-kyu-kbd.rules no está en el repo; RGB del teclado sin regla."
+        nota "udev/60-horus-kbd.rules no está en el repo; RGB del teclado sin regla."
     elif sudo cmp -s "$src" "$dst" 2>/dev/null; then
         skip "Regla udev del teclado ya instalada y al día."
     else
@@ -2065,7 +2036,7 @@ sec_flatpak() {
 #   user.js + CSS -> todos los perfiles de ~/.zen (nombres con espacios)
 #   Dark Reader (config/zen/darkreader-horus.json) se IMPORTA a mano.
 sec_zen() {
-    local src="${KYU_OS_DIR:-$HOME/kyu-os}/config/zen"
+    local src="${HORUS_DIR:-$HOME/horus}/config/zen"
     local zen_dir="$HOME/.zen" ini="$HOME/.zen/profiles.ini"
     local zen_install="" c
     for c in /opt/zen-browser-bin "$HOME/.tarball-installations/zen" /opt/zen "$HOME/.zen-browser"; do
@@ -2083,7 +2054,7 @@ sec_zen() {
             && did "policies.json de Zen desplegado (extensiones + telemetría)."
     fi
     if [ ! -f "$ini" ]; then
-        nota "Zen sin perfil aún. Abre Zen una vez y corre: kyu-solo zen."
+        nota "Zen sin perfil aún. Abre Zen una vez y corre: horus-solo zen."
         return 0
     fi
     local perfiles=() rel dir count=0
@@ -2108,23 +2079,23 @@ sec_zen() {
 # SECCIÓN «sesion» — TECLA POWER / TAPA → BLOQUEO (sin suspender)
 # Drop-in de logind: la tecla power y el cierre de tapa BLOQUEAN en vez de
 # suspender/apagar. Niri cede la tecla power con 'disable-power-key-handling'
-# (input.kdl); logind emite la señal Lock y kyu-lock-listener (autostart) muestra
+# (input.kdl); logind emite la señal Lock y horus-lock-listener (autostart) muestra
 # el lockscreen de Noctalia. Aplica al reiniciar (logind lee el drop-in al boot).
 sec_sesion() {
-    sudo install -Dm644 /dev/stdin /etc/systemd/logind.conf.d/10-kyu-lock.conf <<'KYUEOF'
-# Kyu OS — tecla power y cierre de tapa BLOQUEAN (no suspenden ni apagan).
+    sudo install -Dm644 /dev/stdin /etc/systemd/logind.conf.d/10-horus-lock.conf <<'HORUSEOF'
+# Horus Project — tecla power y cierre de tapa BLOQUEAN (no suspenden ni apagan).
 [Login]
 HandlePowerKey=lock
 HandleLidSwitch=lock
 HandleLidSwitchExternalPower=lock
 HandleLidSwitchDocked=ignore
-KYUEOF
+HORUSEOF
     did "logind: tecla power/tapa → bloqueo (aplica al reiniciar)."
 }
 
 # SECCIÓN «rendimiento» — RENDIMIENTO GRÁFICO (GPU híbrida)
 # Solo aplica si hay GPU dedicada. Instala herramientas de cambio/monitoreo
-# (supergfxctl, nvtop) y deja que kyu-power arme las curvas de ventilador + el
+# (supergfxctl, nvtop) y deja que horus-power arme las curvas de ventilador + el
 # hook de energía. Todo va con guardas: si algo falta, avisa y sigue.
 sec_rendimiento() {
     if ! lspci 2>/dev/null | grep -qi nvidia; then
@@ -2134,16 +2105,16 @@ sec_rendimiento() {
     instala_repo nvtop
     instala_aur supergfxctl
     local KP=""
-    command -v kyu-power &>/dev/null && KP="kyu-power"
-    [ -z "$KP" ] && [ -x "$HOME/.local/bin/kyu-power" ] && KP="$HOME/.local/bin/kyu-power"
+    command -v horus-power &>/dev/null && KP="horus-power"
+    [ -z "$KP" ] && [ -x "$HOME/.local/bin/horus-power" ] && KP="$HOME/.local/bin/horus-power"
     if [ -n "$KP" ]; then
         if "$KP" setup; then
-            did "kyu-power setup aplicado (curvas de ventilador + hook de energía)."
+            did "horus-power setup aplicado (curvas de ventilador + hook de energía)."
         else
-            nota "kyu-power setup no completó; revísalo a mano con: kyu-power setup"
+            nota "horus-power setup no completó; revísalo a mano con: horus-power setup"
         fi
     else
-        nota "kyu-power aún no está en PATH; corre 'kyu-solo configs' y reintenta esta sección."
+        nota "horus-power aún no está en PATH; corre 'horus-solo configs' y reintenta esta sección."
     fi
 }
 
@@ -2160,16 +2131,16 @@ for _t in "${SELECCION[@]}"; do
 done
 
 # ── Aplicar el tema elegido en el asistente (si hubo y no es preview) ──
-# kyu-tema ya quedó desplegado por la sección configs; aplica niri/teclado
+# horus-theme ya quedó desplegado por la sección configs; aplica niri/teclado
 # (y foot/colorscheme cuando esa pieza esté activa). Si el hot-reload no corre
 # (p.ej. fuera de Niri), igual deja la config escrita para el próximo login.
-if [ "${KYU_PREVIEW:-0}" -eq 0 ] && [ -n "${KYU_THEME:-}" ] && [ "${KYU_THEME}" != "__custom__" ]; then
-    if [ -x "$HOME/.local/bin/kyu-tema" ]; then
-        section "Tema: $KYU_THEME"
-        if "$HOME/.local/bin/kyu-tema" "$KYU_THEME"; then
-            did "Tema '$KYU_THEME' aplicado."
+if [ "${HORUS_PREVIEW:-0}" -eq 0 ] && [ -n "${HORUS_THEME:-}" ] && [ "${HORUS_THEME}" != "__custom__" ]; then
+    if [ -x "$HOME/.local/bin/horus-theme" ]; then
+        section "Tema: $HORUS_THEME"
+        if "$HOME/.local/bin/horus-theme" "$HORUS_THEME"; then
+            did "Tema '$HORUS_THEME' aplicado."
         else
-            nota "No se pudo aplicar el tema automáticamente; corre: kyu-tema \"$KYU_THEME\""
+            nota "No se pudo aplicar el tema automáticamente; corre: horus-theme \"$HORUS_THEME\""
         fi
     fi
 fi
@@ -2214,10 +2185,10 @@ fi
 echo -e "  ${PURPLE}•${NC} Log de esta corrida: $LOG_FILE"
 echo -e "  ${PURPLE}•${NC} Atajo al último:     $LOG_DIR/setup-latest.log"
 
-# ── ¿Primera corrida COMPLETA? Se decide por KYU_SETUP_PREVIO (capturado al inicio):
-#    si kyu-setup NO existía, el setup nunca había corrido aquí. En --solo no aplica.
+# ── ¿Primera corrida COMPLETA? Se decide por HORUS_SETUP_PREVIO (capturado al inicio):
+#    si horus-start NO existía, el setup nunca había corrido aquí. En --solo no aplica.
 _primera=0
-[ -z "$SOLO_RAW" ] && [ "$KYU_SETUP_PREVIO" -eq 0 ] && _primera=1
+[ -z "$SOLO_RAW" ] && [ "$HORUS_SETUP_PREVIO" -eq 0 ] && _primera=1
 
 # ── Leyenda de reinicio: solo si hace falta Y no vamos a reiniciar solos abajo.
 [ "$NEED_REBOOT" -eq 1 ] && [ "$_primera" -eq 0 ] && \
@@ -2232,8 +2203,8 @@ else
 fi
 echo ""
 
-# ── Solo en la PRIMERA corrida (kyu-setup no existía): reinicio inmediato, con 10 s
-#    para cancelar. Como kyu-setup ya quedó desplegado, las próximas no reinician.
+# ── Solo en la PRIMERA corrida (horus-start no existía): reinicio inmediato, con 10 s
+#    para cancelar. Como horus-start ya quedó desplegado, las próximas no reinician.
 if [ "$_primera" -eq 1 ]; then
     echo -e "  ${YELLOW}Primera instalación: reinicio automático en 10 s para aplicar todo.${NC}"
     echo -e "  ${PURPLE}(Ctrl+C para cancelar.)${NC}"

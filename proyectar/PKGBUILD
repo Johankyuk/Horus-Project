@@ -2,15 +2,15 @@
 pkgname=proyectar
 pkgver=1.0.0
 pkgrel=1
-pkgdesc="Toggle de monitores espejo/extendido para Niri (Kyu OS)"
+pkgdesc="Toggle de monitores espejo/extendido para Niri (Horus Project)"
 arch=('any')
-url="https://github.com/Johankyuk/kyu-os"
+url="https://github.com/Johankyuk/horus"
 license=('MIT')
 depends=('python' 'niri')
-source=('proyectar' 'kyu-proyeccion')
+source=('proyectar' 'horus-mirror')
 sha256sums=('SKIP' 'SKIP')
 
 package() {
   install -Dm755 proyectar      "$pkgdir/usr/bin/proyectar"
-  install -Dm755 kyu-proyeccion "$pkgdir/usr/bin/kyu-proyeccion"
+  install -Dm755 horus-mirror "$pkgdir/usr/bin/horus-mirror"
 }

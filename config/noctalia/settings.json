@@ -132,7 +132,7 @@
     "screenOverrides": []
   },
   "general": {
-    "avatarImage": "/home/kyu/kyu-os/PFP/pfpkyu.jpg",
+    "avatarImage": "/home/kyu/horus/PFP/pfpkyu.jpg",
     "dimmerOpacity": 0.2,
     "showScreenCorners": false,
     "forceBlackScreenCorners": false,
@@ -220,7 +220,7 @@
   "wallpaper": {
     "enabled": true,
     "overviewEnabled": false,
-    "directory": "/home/kyu/kyu-os/Wallpapers",
+    "directory": "/home/kyu/horus/Wallpapers",
     "monitorDirectories": [],
     "enableMultiMonitorDirectories": false,
     "showHiddenFiles": true,
@@ -258,11 +258,11 @@
     "favorites": [
       {
         "appearance": "dark",
-        "colorScheme": "Kyu OS",
+        "colorScheme": "Horus Project",
         "darkMode": true,
         "generationMethod": "vibrant",
         "paletteColors": ["#7a2be8", "#b340e0", "#df54a6", "#f5567a"],
-        "path": "/home/kyu/kyu-os/Wallpapers/802579.jpg",
+        "path": "/home/kyu/horus/Wallpapers/802579.jpg",
         "useWallpaperColors": false
       }
     ]
@@ -281,7 +281,7 @@
     "sortByMostUsed": true,
     "terminalCommand": "foot",
     "customLaunchPrefixEnabled": true,
-    "customLaunchPrefix": "kyu-gpu",
+    "customLaunchPrefix": "horus-gpu",
     "viewMode": "grid",
     "showCategories": true,
     "iconMode": "native",
@@ -461,7 +461,7 @@
   },
   "colorSchemes": {
     "useWallpaperColors": false,
-    "predefinedScheme": "Kyu OS",
+    "predefinedScheme": "Horus Project",
     "darkMode": true,
     "schedulingMode": "off",
     "manualSunrise": "06:30",

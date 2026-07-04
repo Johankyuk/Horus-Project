@@ -1,9 +1,0 @@
-#!/bin/bash
-# kyu-solo: corre SOLO las secciones indicadas del setup. Autor: Kyu
-# Atajo de: kyu-setup --solo=SECCIONES
-#   kyu-solo lista            -> muestra la tabla de secciones disponibles
-#   kyu-solo cursor           -> corre solo la sección cursor
-#   kyu-solo cursor sddm      -> varias por espacio…
-#   kyu-solo 7,9              -> …o por número, separadas por coma
-# Une los argumentos con coma, así aceptas espacios o comas indistintamente.
-exec kyu-setup --solo="$(IFS=,; echo "$*")"
