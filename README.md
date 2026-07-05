@@ -31,7 +31,7 @@ bash <(curl -fsSL https://raw.githubusercontent.com/Johankyuk/Horus-Project/main
 
 ## Quick install
 
-One command. Installs git if missing, clones the repo into `~/horus` and launches the installer:
+One command. Installs git if missing, clones the repo into `~/Horus-Project` and launches the installer:
 
 ```
 bash <(curl -fsSL https://raw.githubusercontent.com/Johankyuk/Horus-Project/main/bootstrap.sh)

@@ -18,7 +18,7 @@ import sys, os, re, json, shutil, subprocess, datetime, unicodedata, time, diffl
 def _localizar_repo():
     for c in (os.environ.get("HORUS_DIR"),
               os.path.expanduser("~/.config/horus/repo"),
-              os.path.expanduser("~/horus")):
+              os.path.expanduser("~/Horus-Project")):
         if c and os.path.isfile(os.path.join(c, "horus_themes.py")):
             return os.path.abspath(c)
     # fallback: junto a este script

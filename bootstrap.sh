@@ -9,12 +9,12 @@
 #   bash <(curl -fsSL .../bootstrap.sh) --dry-run
 #
 # Variables opcionales:
-#   HORUS_DIR   donde clonar el repo   (default: ~/horus)
+#   HORUS_DIR   donde clonar el repo   (default: ~/Horus-Project)
 #   HORUS_REF      rama o tag a clonar     (default: main)
 set -euo pipefail
 
 REPO_URL="https://github.com/Johankyuk/Horus-Project.git"
-DEST="${HORUS_DIR:-$HOME/horus}"
+DEST="${HORUS_DIR:-$HOME/Horus-Project}"
 REF="${HORUS_REF:-main}"
 
 say() { printf '\033[0;35m[horus]\033[0m %s\n' "$1"; }

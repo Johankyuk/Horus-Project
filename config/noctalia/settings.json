@@ -132,7 +132,7 @@
     "screenOverrides": []
   },
   "general": {
-    "avatarImage": "/home/kyu/horus/PFP/pfpkyu.jpg",
+    "avatarImage": "/home/kyu/Horus-Project/PFP/pfpkyu.jpg",
     "dimmerOpacity": 0.2,
     "showScreenCorners": false,
     "forceBlackScreenCorners": false,
@@ -220,7 +220,7 @@
   "wallpaper": {
     "enabled": true,
     "overviewEnabled": false,
-    "directory": "/home/kyu/horus/Wallpapers",
+    "directory": "/home/kyu/Horus-Project/Wallpapers",
     "monitorDirectories": [],
     "enableMultiMonitorDirectories": false,
     "showHiddenFiles": true,
@@ -262,7 +262,7 @@
         "darkMode": true,
         "generationMethod": "vibrant",
         "paletteColors": ["#7a2be8", "#b340e0", "#df54a6", "#f5567a"],
-        "path": "/home/kyu/horus/Wallpapers/802579.jpg",
+        "path": "/home/kyu/Horus-Project/Wallpapers/802579.jpg",
         "useWallpaperColors": false
       }
     ]

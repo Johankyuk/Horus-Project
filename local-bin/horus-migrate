@@ -18,14 +18,14 @@ if [ -d "$HOME/.cache/kyu-os" ] && [ ! -d "$HOME/.cache/horus" ]; then
     mv "$HOME/.cache/kyu-os" "$HOME/.cache/horus" && did "~/.cache/kyu-os → ~/.cache/horus"
 else skip "~/.cache/horus"; fi
 
-# 2. Repo: ~/kyu-os → ~/horus (+ pointer + remote)
-if [ -d "$HOME/kyu-os" ] && [ ! -d "$HOME/horus" ]; then
-    mv "$HOME/kyu-os" "$HOME/horus" && did "repo ~/kyu-os → ~/horus"
+# 2. Repo: ~/kyu-os → ~/Horus-Project (+ pointer + remote)
+if [ -d "$HOME/kyu-os" ] && [ ! -d "$HOME/Horus-Project" ]; then
+    mv "$HOME/kyu-os" "$HOME/Horus-Project" && did "repo ~/kyu-os → ~/Horus-Project"
 fi
-if [ -d "$HOME/horus/.git" ]; then
+if [ -d "$HOME/Horus-Project/.git" ]; then
     mkdir -p "$HOME/.config/horus"
-    echo "$HOME/horus" > "$HOME/.config/horus/repo"
-    git -C "$HOME/horus" remote set-url origin "https://github.com/Johankyuk/Horus-Project.git" 2>/dev/null \
+    echo "$HOME/Horus-Project" > "$HOME/.config/horus/repo"
+    git -C "$HOME/Horus-Project" remote set-url origin "https://github.com/Johankyuk/Horus-Project.git" 2>/dev/null \
         && did "remote origin → github.com/Johankyuk/Horus-Project (renombra el repo en GitHub si no lo has hecho)"
 fi
 
@@ -76,7 +76,7 @@ else
 fi
 
 # 7. Redesplegar todo con nombres nuevos
-REPO=$(cat "$HOME/.config/horus/repo" 2>/dev/null || echo "$HOME/horus")
+REPO=$(cat "$HOME/.config/horus/repo" 2>/dev/null || echo "$HOME/Horus-Project")
 if [ -x "$REPO/setup_master.sh" ]; then
     printf "${P}── Redesplegando (horus-start) ──${N}\n"
     bash "$REPO/setup_master.sh" "$@"

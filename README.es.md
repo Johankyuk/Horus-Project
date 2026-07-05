@@ -31,7 +31,7 @@ bash <(curl -fsSL https://raw.githubusercontent.com/Johankyuk/Horus-Project/main
 
 ## Instalación rápida
 
-Un solo comando. Instala git si falta, clona el repo en `~/horus` y lanza el instalador:
+Un solo comando. Instala git si falta, clona el repo en `~/Horus-Project` y lanza el instalador:
 
 ```
 bash <(curl -fsSL https://raw.githubusercontent.com/Johankyuk/Horus-Project/main/bootstrap.sh)
