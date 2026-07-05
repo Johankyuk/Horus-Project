@@ -106,6 +106,8 @@ TEMAS = {
     "Amarillo":        ("#f5c211", 0.00, 1.00),
     "Naranja":         ("#ff8a1f", 0.00, 1.00),
     "Rojo":            ("#ec3450", 0.00, 1.00),
+    "Verde oscuro":    ("#2d8659", -0.03, 0.72),  # esmeralda profundo, apagado
+    "Verde lima":      ("#b8e01e", 0.06, 1.08),   # lima acido, hacia amarillo
 }
 # "Gris" es especial (croma 0); se construye aparte.
 
