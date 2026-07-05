@@ -15,8 +15,16 @@ prof=$(cat /sys/firmware/acpi/platform_profile 2>/dev/null)
 # iGPU si: silencio, o vas en batería (candado de energía)
 if [ "$prof" = quiet ] || ! _en_ac; then exec "$@"; fi
 
+# Field codes sin expandir (%U, %f...) del Exec de .desktop: fuera, o flatpak
+# --file-forwarding se atraganta con el token literal y no lanza nada.
+limpio=()
+for a in "$@"; do case "$a" in %[a-zA-Z]) ;; *) limpio+=("$a");; esac; done
+set -- "${limpio[@]}"
+[ $# -eq 0 ] && exit 0
+
 # equilibrado/rendimiento + cargador: ofrecer la dGPU
-if [ "$1" = flatpak ]; then
+# (basename: el Exec exportado usa /usr/bin/flatpak, no "flatpak" pelon)
+if [ "$(basename "$1")" = flatpak ]; then
     out=(); inj=0
     for a in "$@"; do out+=("$a")
         if [ "$a" = run ] && [ $inj -eq 0 ]; then

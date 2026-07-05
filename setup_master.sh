@@ -375,7 +375,7 @@ mostrar_plan() {
 
 # REGISTRO DE SECCIONES (para el flujo normal y para --solo)
 # Orden canónico de ejecución. --solo acepta estos nombres o su número.
-SECCIONES=(snapshot update repos aur flatpak opcionales configs generables launcher gtk cursor sddm branding steam teclado recursos proyeccion sesion zen rendimiento gaming)
+SECCIONES=(snapshot update repos aur flatpak opcionales configs generables launcher gtk cursor sddm branding steam teclado recursos proyeccion sesion sistema zen rendimiento gaming)
 declare -A SEC_DESC=(
     [snapshot]="Snapshot pre-setup"
     [update]="Actualizar sistema"
@@ -394,6 +394,7 @@ declare -A SEC_DESC=(
     [recursos]="Recursos + batería"
     [proyeccion]="Utilidad de proyección"
     [sesion]="Sesión: tecla power/tapa → bloqueo (sin suspender)"
+    [sistema]="Servicios de sistema (power-hook, keyd, gpu-watch, fix Sober)"
     [flatpak]="Flatpak + remoto Flathub"
     [zen]="Navegador Zen: tema Horus, prefs y extensiones"
     [rendimiento]="Rendimiento gráfico (supergfxctl, nvtop, horus-power)"
@@ -403,10 +404,10 @@ declare -A SEC_DESC=(
 # sudo no se pide password ni keep-alive (p.ej. --solo=proyeccion corre sin
 # privilegios); ídem con la red y con exigir paru/yay.
 # 'recursos' solo usa sudo para el servicio de batería: hereda DO_BATERIA.
-declare -A SEC_SUDO=( [snapshot]=1 [update]=1 [repos]=1 [aur]=1 [opcionales]=1
+declare -A SEC_SUDO=( [sistema]=1 [snapshot]=1 [update]=1 [repos]=1 [aur]=1 [opcionales]=1
     [configs]=1 [generables]=0 [launcher]=0 [gtk]=0 [cursor]=0 [sddm]=1 [branding]=1 [steam]=1
     [teclado]=1 [recursos]=$DO_BATERIA [proyeccion]=0 [sesion]=1 [flatpak]=1 [zen]=1 [rendimiento]=1 [gaming]=0 )
-declare -A SEC_RED=(  [snapshot]=0 [update]=1 [repos]=1 [aur]=1 [opcionales]=1
+declare -A SEC_RED=(  [sistema]=1 [snapshot]=0 [update]=1 [repos]=1 [aur]=1 [opcionales]=1
     [configs]=0 [generables]=0 [launcher]=0 [gtk]=0 [cursor]=0 [sddm]=0 [branding]=0
     [steam]=0 [teclado]=0 [recursos]=0 [proyeccion]=0 [sesion]=0 [flatpak]=1 [zen]=0 [rendimiento]=1 [gaming]=0 )
 
@@ -620,7 +621,7 @@ if [ "${#SOLO_SECS[@]}" -eq 0 ]; then
     # shellcheck source=/dev/null
     source "$SCRIPT_DIR/lib/ui.sh"
     HORUS_DGPU=0;  lspci 2>/dev/null | grep -qi nvidia && HORUS_DGPU=1
-    HORUS_SDBOOT=1; bootctl is-installed &>/dev/null || HORUS_SDBOOT=0
+    HORUS_SDBOOT=1; sudo bootctl is-installed &>/dev/null || HORUS_SDBOOT=0  # ESP root-only: sin sudo, falso negativo
     [ "$HORUS_PREVIEW" -eq 1 ] && export HORUS_UI_PREVIEW=1
 
     if ! horus_wizard; then exit 0; fi   # el asistente ya avisó si se canceló
@@ -2029,6 +2030,40 @@ sec_flatpak() {
         sudo flatpak remote-add --if-not-exists flathub \
             https://dl.flathub.org/repo/flathub.flatpakrepo \
             && did "Remoto Flathub agregado."
+    fi
+}
+
+# SECCIÓN «sistema» — servicios y reglas de system/ (antes huérfanos del setup)
+sec_sistema() {
+    local sysd="${HORUS_DIR:-$HOME/horus}/system"
+    # 1) power-hook (root): dGPU y ventiladores atados al perfil de energía
+    if [ -f "$sysd/horus-power-hook" ]; then
+        sudo install -m755 "$sysd/horus-power-hook" /usr/local/bin/horus-power-hook
+        sudo install -m644 "$sysd/horus-power-hook.service" /etc/systemd/system/
+        sudo systemctl daemon-reload
+        sudo systemctl enable --now horus-power-hook.service &>/dev/null \
+            && did "horus-power-hook desplegado y activo." || warn "horus-power-hook no arrancó."
+    fi
+    # 2) keyd: config del repo (fuente de verdad; horus-sync captura cambios en vivo)
+    if [ -f "$sysd/keyd-default.conf" ]; then
+        sudo pacman -S --needed --noconfirm keyd &>/dev/null
+        sudo install -Dm644 "$sysd/keyd-default.conf" /etc/keyd/default.conf
+        sudo systemctl enable --now keyd &>/dev/null; sudo keyd reload &>/dev/null
+        did "keyd con config del repo."
+    fi
+    # 3) gpu-watch (usuario): dGPU de sesión en rendimiento+AC (el script lo pone configs/)
+    if [ -f "$sysd/horus-gpu-watch.service" ]; then
+        install -Dm644 "$sysd/horus-gpu-watch.service" "$HOME/.config/systemd/user/horus-gpu-watch.service"
+        systemctl --user daemon-reload
+        systemctl --user enable --now horus-gpu-watch &>/dev/null && did "horus-gpu-watch activo."
+    fi
+    # 4) Sober: override del .desktop exportado (file-forwarding + %u literal = crash)
+    local sober="$HOME/.local/share/flatpak/exports/share/applications/org.vinegarhq.Sober.desktop"
+    if [ -f "$sober" ]; then
+        mkdir -p "$HOME/.local/share/applications"
+        sed 's| --file-forwarding | |; s| -- @@u %u @@||' "$sober" \
+            > "$HOME/.local/share/applications/org.vinegarhq.Sober.desktop"
+        did "Sober: .desktop sin file-forwarding (fix launcher)."
     fi
 }
 
