@@ -430,7 +430,8 @@ def aplicar(tema):
     patch_niri(tema, ts)
     patch_kbd(tema, ts)        # ← teclado RGB sigue el primary del tema
     gen_colorscheme(tema, ts)  # ← reescribe el scheme "Horus Project" (dark + light)
-    gen_foot(tema, ts)         # ← foot.ini del tema (ANSI semánticos fijos)\n    recolorear_terminales()    # ← pinta las foot abiertas con el tema entrante
+    gen_foot(tema, ts)         # ← foot.ini del tema (ANSI semánticos fijos)
+    recolorear_terminales()    # ← pinta las foot abiertas con el tema entrante
     patch_fastfetch(tema, ts)  # ← logo/keys/title de fastfetch siguen el tema
     patch_cursor(tema)         # cursor Bibata del tema (build en 2o plano si falta)
     # patch_gtk(tema, ts)      # (pendiente) carpetas de Thunar / acento GTK
@@ -439,7 +440,7 @@ def aplicar(tema):
     png = wallpaper_del_tema(tema)
     sj = os.path.join(CFG, "noctalia", "settings.json")
     wp_cambia = bool(png) and os.path.isfile(sj) and png not in open(sj, encoding="utf-8").read()
-    if _CAMBIOS[0] or wp_cambia:
+    if _CAMBIOS[0] or wp_cambia or os.environ.get("HORUS_FIRST") == "1":
         stop_noctalia()            # 1. matar (o guardaria settings viejos al salir)
         set_wallpaper_activo(png, ts)  # 2. escribir wallpaper del tema
         _asegura_dark(ts)              # 3. asegurar modo oscuro
