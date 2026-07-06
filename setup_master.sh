@@ -1231,9 +1231,6 @@ _folder_svg=$(find "$HOME/.local/share/icons/Papirus-Dark" /usr/share/icons/Papi
     -path '*/places/*/folder.svg' 2>/dev/null | head -1)
 if [ -n "$_folder_svg" ] && [ -L "$_folder_svg" ] && readlink "$_folder_svg" | grep -q 'violet'; then
     skip "Carpetas Papirus ya en violet."
-else
-    papirus-folders -C violet --theme Papirus-Dark && did "Carpetas Papirus violet aplicadas." \
-        || nota "papirus-folders falló (carpetas sin recolorear)."
 fi
 
 apply_gtk_key "$GTK3_CONF" "gtk-icon-theme-name" "Papirus-Dark"
