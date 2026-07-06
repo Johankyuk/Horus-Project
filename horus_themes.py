@@ -199,3 +199,19 @@ def rotar_hex(hexc, nombre):
     if dh is None:                       # Gris
         return _rot(hexc, 0, gray=True)
     return _rot(hexc, dh, dL=dL, fC=fC)
+
+
+# ── Folders de Thunar/Papirus por tema ───────────────────────────
+# 9 temas mapean a una familia que Papirus YA trae (papirus-folders solo la
+# activa). Los dos verdes no tienen equivalente (Papirus trae un unico verde
+# oliva), asi que se recolorean al hex del tema en un overlay hijo.
+
+def folder_hex(nombre):
+    """(cara, borde) para recolorear folder-green-* al tema. Deriva del primary
+    con la misma relacion L/C que usan las familias reales de Papirus."""
+    prim = construir(nombre)["mPrimary"]
+    L, C, H = _lch(prim)
+    cara = _hlc(min(0.70, L + 0.12), C * 0.72, H)
+    Lc, Cc, Hc = _lch(cara)
+    borde = _hlc(Lc - 0.14, Cc * 0.90, Hc)
+    return cara, borde
