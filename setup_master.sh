@@ -2158,21 +2158,23 @@ sec_zen() {
     fi
 }
 
-# SECCIÓN «sesion» — TECLA POWER / TAPA → BLOQUEO (sin suspender)
-# Drop-in de logind: la tecla power y el cierre de tapa BLOQUEAN en vez de
-# suspender/apagar. Niri cede la tecla power con 'disable-power-key-handling'
-# (input.kdl); logind emite la señal Lock y horus-lock-listener (autostart) muestra
-# el lockscreen de Noctalia. Aplica al reiniciar (logind lee el drop-in al boot).
+# SECCIÓN «sesion» — TECLA POWER → BLOQUEO / TAPA → IGNORAR
+# Drop-in de logind: la tecla power BLOQUEA (en vez de apagar) y el cierre de
+# tapa se IGNORA (nada se suspende; lo que corra sigue corriendo). Niri cede la
+# tecla power con 'disable-power-key-handling' (input.kdl); logind emite la señal
+# Lock y horus-lock-listener (autostart) muestra el lockscreen de Noctalia. Aplica
+# al reiniciar (logind lee el drop-in al boot).
 sec_sesion() {
     sudo install -Dm644 /dev/stdin /etc/systemd/logind.conf.d/10-horus-lock.conf <<'HORUSEOF'
-# Horus — tecla power y cierre de tapa BLOQUEAN (no suspenden ni apagan).
+# Horus — la tecla power BLOQUEA; el cierre de tapa se IGNORA (nada se suspende).
 [Login]
 HandlePowerKey=lock
-HandleLidSwitch=lock
-HandleLidSwitchExternalPower=lock
+HandleLidSwitch=ignore
+HandleLidSwitchExternalPower=ignore
 HandleLidSwitchDocked=ignore
 HORUSEOF
-    did "logind: tecla power/tapa → bloqueo (aplica al reiniciar)."
+    did "logind: tecla power → bloqueo, cierre de tapa ignorado (aplica al reiniciar)."
+    nota "Tapa cerrada + rendimiento + dGPU activa = menos disipación (el A16 ventila por teclado/trasera). Vigila temperaturas si dejas carga de GPU con la tapa cerrada."
 }
 
 # SECCIÓN «rendimiento» — RENDIMIENTO GRÁFICO (GPU híbrida)
