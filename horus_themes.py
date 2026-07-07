@@ -201,8 +201,10 @@ def rotar_hex(hexc, nombre):
     return _rot(hexc, dh, dL=dL, fC=fC)
 
 
-# ── Folders de Thunar/Papirus por tema ───────────────────────────
-# 9 temas mapean a una familia que Papirus YA trae (papirus-folders solo la
-# activa). Los dos verdes no tienen equivalente (Papirus trae un unico verde
-# oliva), asi que se recolorean al hex del tema en un overlay hijo.
+# ── Folders de Papirus por tema ──────────────────────────────────
+# Son del ICON THEME: los usa cualquier gestor de archivos (hoy PCManFM-Qt;
+# antes Thunar). 9 temas mapean a una familia que Papirus YA trae
+# (papirus-folders solo la activa). Los dos verdes no tienen equivalente
+# (Papirus trae un unico verde oliva), asi que se recolorean al hex del
+# tema en un overlay hijo.
 

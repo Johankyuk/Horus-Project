@@ -142,12 +142,14 @@ PKGS_REPO=(
     niri
     # Terminal + toys de repo
     foot cava cmatrix tty-clock
-    # Gestor de archivos + plugins + thumbnails
-    thunar thunar-volman thunar-archive-plugin thunar-media-tags-plugin
-    gvfs gvfs-mtp tumbler ffmpegthumbnailer
-    # Archivador GUI + motores de compresión: los usa el menú "Comprimir/Extraer"
-    # de Thunar (thunar-archive-plugin, ya listado arriba). p7zip/zip/unzip son el
-    # backend; tar/gzip/bzip2/xz vienen en el sistema base.
+    # Gestor de archivos (Qt: se tematiza por PALETA via qt6ct, no por CSS fragil
+    # como el GTK de Thunar) + montaje/MTP + thumbnails de video (libfm-qt trae
+    # los de imagen; tumbler era el thumbnailer de la era Thunar y ya no hace falta)
+    pcmanfm-qt qt6ct
+    gvfs gvfs-mtp ffmpegthumbnailer
+    # Archivador GUI + motores de compresión: el menú "Comprimir/Extraer" de
+    # PCManFM-Qt invoca el Archiver fijado en config/pcmanfm-qt (xarchiver).
+    # p7zip/zip/unzip son el backend; tar/gzip/bzip2/xz vienen en el sistema base.
     xarchiver p7zip zip unzip
     # Meta de gaming oficial de CachyOS: trae la capa de compatibilidad (gamemode,
     # mangohud, gamescope, proton-cachyos, wine, vulkan…) y los launchers (Lutris,
@@ -385,7 +387,7 @@ declare -A SEC_DESC=(
     [configs]="Configs (Niri, Noctalia, Foot) + scripts"
     [generables]="Generables (Noctalia scheme, fastfetch)"
     [launcher]="Limpieza del lanzador (ocultar no-apps)"
-    [gtk]="GTK, iconos y Thunar"
+    [gtk]="GTK, iconos y gestor de archivos"
     [cursor]="Cursor morado Bibata"
     [sddm]="SDDM Sugar-Dark"
     [branding]="Branding Horus (systemd-boot)"
@@ -853,6 +855,14 @@ sec_configs() {
 # "cambiado" en cada corrida porque el repo trae rutas /home/kyu.
 deploy niri
 
+# Paleta Qt: el ESQUEMA (colores) sí viaja desde el repo; qt6ct.conf NO, porque
+# lleva la ruta absoluta al esquema (cambia por usuario) — lo escribe la sección
+# gtk y lo regenera horus-theme (gen_qt6ct) con cada cambio de tema.
+deploy qt6ct
+# PCManFM-Qt: fija Archiver (xarchiver) y Terminal (foot). OJO: como Noctalia,
+# reescribe su settings.conf al cerrar; el repo es la fuente y el deploy lo pisa.
+deploy pcmanfm-qt
+
 # foot: se despliega NORMALIZANDO la sintaxis deprecada antes de copiar (lo que
 # hacía fix_foot.sh). foot >= 1.23 reemplazó la sección [colors] por
 # [colors-dark]/[colors-light] e initial-color-theme pasó a tomar dark/light en
@@ -898,7 +908,7 @@ else
     skip "Sin scripts en local-bin (nada que copiar)."
 fi
 
-# Limpieza de apps conflictivas: queremos Zen/Foot/Thunar como únicos.
+# Limpieza de apps conflictivas: queremos Zen/Foot/PCManFM-Qt como únicos.
 # OJO (esto causaba ruido en el log): en CachyOS varios de estos los arrastra un
 # meta-paquete (p.ej. cachyos-niri-noctalia depende de cachyos-alacritty-config y
 # de xdg-desktop-portal-gnome). Quitarlos a la fuerza ROMPE dependencias y pacman
@@ -920,11 +930,14 @@ _quitar_pkg() {  # $1 = paquete a intentar remover
 }
 # Nota: Firefox ya NO se quita — el navegador es opcional (Zen se ofrece en [5])
 # y alguien puede preferir Firefox. Sí se limpian terminales y file managers
-# alternos, porque Foot y Thunar sí son base fija del entorno.
+# alternos, porque Foot y PCManFM-Qt sí son base fija del entorno. Thunar (y su
+# stack: plugins + tumbler) pasó a conflictivo tras la migración a Qt: su theming
+# GTK-CSS era frágil y fue lo que descarriló la personalización fuera del morado.
 for pkg in chromium google-chrome brave-bin \
            vivaldi vivaldi-ffmpeg-codecs \
            alacritty kitty wezterm cachyos-alacritty-config \
-           nautilus dolphin nemo caja pcmanfm pcmanfm-qt; do
+           nautilus dolphin nemo caja pcmanfm \
+           thunar-volman thunar-archive-plugin thunar-media-tags-plugin tumbler thunar; do
     _quitar_pkg "$pkg"
 done
 # Portal: si quedó el de gnome y NO lo bloquea un meta-paquete, cambiar a gtk.
@@ -1115,16 +1128,19 @@ local APPDIR="$HOME/.local/share/applications"
 local MARK="X-Kyu-Launcher-Hide=1"
 mkdir -p "$APPDIR"
 
-# Visibles (por NO estar en la lista): VSCodium, ONLYOFFICE, VLC, Thunar (gestor)
-# + flatpak Sober y Zen (AUR). Todo lo de abajo se oculta.
+# Visibles (por NO estar en la lista): VSCodium, ONLYOFFICE, VLC, PCManFM-Qt
+# (gestor) + flatpak Sober y Zen (AUR). Todo lo de abajo se oculta.
 local -a OCULTAR=(
     # --- no son apps / utilerias de sistema ---
     avahi-discover bssh bvnc        # navegadores Avahi (Zeroconf/SSH/VNC)
     qv4l2 qvidcap                   # utilerias de camara V4L2
     electron36                      # runtime de Electron
     foot footclient foot-server     # terminal foot (se abre con Mod+Return) y extras
-    xfce4-about                     # "Acerca de Xfce"
-    thunar-settings thunar-volman-settings thunar-bulk-rename  # sub-config de Thunar
+    xfce4-about                     # "Acerca de Xfce" (si quedo libxfce4ui)
+    qt6ct                           # config de paleta Qt (corre: qt6ct)
+    xarchiver                       # PCManFM-Qt lo invoca por comando (Archiver=
+                                    # en settings.conf); ya no aplica el veto de la
+                                    # era Thunar, que detectaba archivadores por .desktop
     btop                            # monitor TUI
     micro vim                       # editores de terminal
     # --- distro CachyOS ---
@@ -1132,13 +1148,10 @@ local -a OCULTAR=(
     org.cachyos.KernelManager org.cachyos.scx-manager
     # --- fuera del launcher minimo (siguen instaladas; corren desde terminal) ---
     firefox                         # segundo navegador
-    org.gnome.Nautilus              # "Archivos" GNOME (queda Thunar como gestor)
+    org.gnome.Nautilus              # "Archivos" GNOME (queda PCManFM-Qt como gestor)
     org.gnome.Meld                  # diff (corre: meld)
     org.pulseaudio.pavucontrol      # control de volumen avanzado
     com.shellyorg.shelly            # Shelly
-    # xarchiver NO se oculta: el menú "Extraer/Comprimir" de Thunar detecta los
-    # archivadores leyendo su .desktop de la base de datos; un override NoDisplay lo
-    # invalida y rompe la extracción. Se queda visible (es el precio de que funcione).
     # --- gaming / hardware: no son de uso diario ---
     io.github.benjamimgois.goverlay # GUI de MangoHud (corre: goverlay)
     lstopo chwd                     # topología de hardware / detección de drivers
@@ -1186,7 +1199,7 @@ def find_id(*pats):
 
 zen = find_id("zen.desktop","zen-browser.desktop","zen*.desktop") or "zen"
 DOCK = [zen, "steam",
-        "onlyoffice-desktopeditors", "codium", "thunar", "org.vinegarhq.Sober"]
+        "onlyoffice-desktopeditors", "codium", "pcmanfm-qt", "org.vinegarhq.Sober"]
 
 ch=[False]
 def walk(o):
@@ -1214,7 +1227,7 @@ else
 fi
 }
 
-# SECCIÓN «gtk» — GTK / ICONOS / THUNAR / PORTAL
+# SECCIÓN «gtk» — GTK / ICONOS / GESTOR DE ARCHIVOS / PORTAL
 sec_gtk() {
 
 # Carpetas Papirus en violet (lento: solo si no estan ya en violet)
@@ -1250,23 +1263,34 @@ if [ -n "$DARK_THEME" ]; then
     fi
 fi
 
-# Thunar como gestor por defecto
-command -v xdg-mime &>/dev/null && xdg-mime default thunar.desktop inode/directory
+# PCManFM-Qt como gestor por defecto
+command -v xdg-mime &>/dev/null && xdg-mime default pcmanfm-qt.desktop inode/directory
 MIMEAPPS="$HOME/.config/mimeapps.list"; touch "$MIMEAPPS"
-_thunar_prev=$(grep -c "^inode/directory=thunar.desktop" "$MIMEAPPS" 2>/dev/null || echo 0)
+_fm_prev=$(grep -c "^inode/directory=pcmanfm-qt.desktop" "$MIMEAPPS" 2>/dev/null || echo 0)
 if grep -q "^\[Default Applications\]" "$MIMEAPPS" 2>/dev/null; then
     grep -q "^inode/directory=" "$MIMEAPPS" \
-        && sed -i "s|^inode/directory=.*|inode/directory=thunar.desktop|" "$MIMEAPPS" \
-        || sed -i "/^\[Default Applications\]/a inode/directory=thunar.desktop" "$MIMEAPPS"
+        && sed -i "s|^inode/directory=.*|inode/directory=pcmanfm-qt.desktop|" "$MIMEAPPS" \
+        || sed -i "/^\[Default Applications\]/a inode/directory=pcmanfm-qt.desktop" "$MIMEAPPS"
 else
-    printf "\n[Default Applications]\ninode/directory=thunar.desktop\n" >> "$MIMEAPPS"
+    printf "\n[Default Applications]\ninode/directory=pcmanfm-qt.desktop\n" >> "$MIMEAPPS"
 fi
 systemctl --user restart xdg-desktop-portal-gtk xdg-desktop-portal 2>/dev/null || true
-if [ "${_thunar_prev:-0}" -ge 1 ]; then
-    skip "Thunar ya era el gestor por defecto."
+if [ "${_fm_prev:-0}" -ge 1 ]; then
+    skip "PCManFM-Qt ya era el gestor por defecto."
 else
-    did "Thunar fijado como gestor de archivos por defecto."
+    did "PCManFM-Qt fijado como gestor de archivos por defecto."
 fi
+
+# Paleta Qt: qt6ct.conf lleva la RUTA ABSOLUTA al esquema (por eso no viaja en
+# el deploy de configs; el esquema colors/horus.conf sí). horus-theme lo
+# regenera al cambiar tema; esto cubre corridas --solo=gtk sin tema al final.
+write_if_changed "$HOME/.config/qt6ct/qt6ct.conf" "qt6ct.conf (Fusion + esquema Horus)" << QTEOF
+[Appearance]
+color_scheme_path=$HOME/.config/qt6ct/colors/horus.conf
+custom_palette=true
+style=Fusion
+standard_dialogs=default
+QTEOF
 }
 
 # SECCIÓN «cursor» — CURSOR MORADO (Bibata) — lo lento

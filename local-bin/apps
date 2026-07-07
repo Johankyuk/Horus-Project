@@ -3,7 +3,7 @@
 # las ocultas del launcher minimo) con su id .desktop y su nombre, asi sabes que
 # puedes correr sin el lanzador.
 #   apps          -> lista todo (id  ->  nombre)
-#   apps <id>     -> lanza esa app   (ej:  apps org.gimp.GIMP   apps vlc   apps thunar)
+#   apps <id>     -> lanza esa app   (ej:  apps org.gimp.GIMP   apps vlc   apps pcmanfm-qt)
 shopt -s nullglob
 
 # Lanzar una app concreta por su id .desktop (gtk-launch ignora Hidden=true).
@@ -31,4 +31,4 @@ for id in $(printf '%s\n' "${!SEEN[@]}" | sort); do
     printf '  %-34s %s\n' "$id" "${SEEN[$id]}"
 done
 echo ""
-echo "Lanzar:  apps <id>   |   o directo en la terminal el comando (vlc, gimp, thunar, meld...)"
+echo "Lanzar:  apps <id>   |   o directo en la terminal el comando (vlc, gimp, pcmanfm-qt, meld...)"

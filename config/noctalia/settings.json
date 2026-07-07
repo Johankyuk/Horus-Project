@@ -356,7 +356,7 @@
     "size": 1,
     "onlySameOutput": false,
     "monitors": [],
-    "pinnedApps": ["zen", "steam", "onlyoffice-desktopeditors", "codium", "thunar", "org.vinegarhq.Sober"],
+    "pinnedApps": ["zen", "steam", "onlyoffice-desktopeditors", "codium", "pcmanfm-qt", "org.vinegarhq.Sober"],
     "colorizeIcons": true,
     "showLauncherIcon": true,
     "launcherPosition": "start",

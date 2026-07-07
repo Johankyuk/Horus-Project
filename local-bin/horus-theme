@@ -18,7 +18,7 @@ import sys, os, re, json, shutil, subprocess, datetime, unicodedata, time, diffl
 def _localizar_repo():
     for c in (os.environ.get("HORUS_DIR"),
               os.path.expanduser("~/.config/horus/repo"),
-              os.path.expanduser("~/Horus-Project")):
+              os.path.expanduser("~/Horus-Core")):
         if c and os.path.isfile(os.path.join(c, "horus_themes.py")):
             return os.path.abspath(c)
     # fallback: junto a este script
@@ -148,6 +148,48 @@ def gen_colorscheme(tema, ts):
     base = {"dark": dark, "light": light}
     _escribe_si_cambia(dst, json.dumps(base, indent=2, ensure_ascii=False) + "\n",
                        f"Colorscheme Noctalia (dark+light) -> {tema}", ts)
+
+# ── 1b) qt6ct: paleta Qt (PCManFM-Qt y cualquier app Qt) ─────
+#   Sustituye al GTK-CSS de la era Thunar: Qt tematiza por PALETA (21 roles
+#   QPalette en un INI), no por CSS fragil. Se genera desde el motor y se
+#   asegura qt6ct.conf (estilo Fusion + ruta absoluta al esquema; por eso
+#   qt6ct.conf NO vive en config/ del repo: la ruta cambia por usuario).
+#   Orden fijo de qt6ct (Qt >= 6.6): WindowText Button Light Midlight Dark
+#   Mid Text BrightText ButtonText Base Window Shadow Highlight
+#   HighlightedText Link LinkVisited AlternateBase ToolTipBase ToolTipText
+#   PlaceholderText Accent. Apps Qt abiertas toman el cambio al reabrirse.
+def _qt6ct_filas(p):
+    activa = [p["mOnSurface"], p["mSurfaceVariant"], p["mOutline"], p["mHover"],
+              p["mShadow"], p["mSurfaceVariant"], p["mOnSurface"], p["mTertiary"],
+              p["mOnSurface"], p["mSurface"], p["mSurface"], p["mShadow"],
+              p["mPrimary"], p["mOnPrimary"], p["mSecondary"], p["mTertiary"],
+              p["mSurfaceVariant"], p["mHover"], p["mOnSurface"],
+              p["mOnSurfaceVariant"], p["mPrimary"]]
+    off = list(activa)
+    for i in (0, 6, 7, 8, 14, 15, 19, 20):     # textos/links/accent apagados
+        off[i] = p["mOutline"]
+    off[12], off[13] = p["mHover"], p["mOnSurfaceVariant"]
+    inact = list(activa)                        # ventana sin foco: seleccion
+    inact[12], inact[13] = p["mOutline"], p["mOnSurface"]  # apagada (como Niri)
+    return activa, off, inact
+
+def gen_qt6ct(tema, ts):
+    activa, off, inact = _qt6ct_filas(kt.construir(tema))
+    argb = lambda fila: ", ".join("#ff" + c.lstrip("#") for c in fila)
+    esquema = os.path.join(CFG, "qt6ct", "colors", "horus.conf")
+    _escribe_si_cambia(esquema,
+                       "[ColorScheme]\n"
+                       f"active_colors={argb(activa)}\n"
+                       f"disabled_colors={argb(off)}\n"
+                       f"inactive_colors={argb(inact)}\n",
+                       f"Paleta Qt (qt6ct) -> {tema}", ts)
+    _escribe_si_cambia(os.path.join(CFG, "qt6ct", "qt6ct.conf"),
+                       "[Appearance]\n"
+                       f"color_scheme_path={esquema}\n"
+                       "custom_palette=true\n"
+                       "style=Fusion\n"
+                       "standard_dialogs=default\n",
+                       "qt6ct.conf (Fusion + esquema Horus)", ts)
 
 # ── 2) foot: parchea colores (ANSI semanticos quedan fijos) ──
 def gen_foot(tema, ts):
@@ -434,7 +476,7 @@ def aplicar(tema):
     recolorear_terminales()    # ← pinta las foot abiertas con el tema entrante
     patch_fastfetch(tema, ts)  # ← logo/keys/title de fastfetch siguen el tema
     patch_cursor(tema)         # cursor Bibata del tema (build en 2o plano si falta)
-    # patch_gtk(tema, ts)      # (pendiente) fondo/acento GTK de Thunar
+    gen_qt6ct(tema, ts)        # ← paleta Qt (PCManFM-Qt y demas apps Qt)
     save_state(tema)
     # ── Wallpaper del tema + reinicio de Noctalia (orden anti-carrera) ──
     png = wallpaper_del_tema(tema)
@@ -445,7 +487,7 @@ def aplicar(tema):
         set_wallpaper_activo(png, ts)  # 2. escribir wallpaper del tema
         _asegura_dark(ts)              # 3. asegurar modo oscuro
         reload_hot(png)                # 4. arrancar Noctalia + wallpaper via IPC
-        did(f"Tema '{tema}' aplicado (Niri + Noctalia + foot + teclado + wallpaper + cursor). Respaldo: {os.path.join(BK_ROOT, ts)}")
+        did(f"Tema '{tema}' aplicado (Niri + Noctalia + foot + Qt + teclado + wallpaper + cursor). Respaldo: {os.path.join(BK_ROOT, ts)}")
     else:
         skip(f"Todo ya estaba en '{tema}'. Sin cambios.")
     _cerrar_terminal()

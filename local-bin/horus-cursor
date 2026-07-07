@@ -4,7 +4,7 @@
 #   horus-cursor --apply NOMBRE                        aplica en caliente
 #   horus-cursor --all                                 pre-genera los 9 temas
 set -u
-HORUS_DIR="${HORUS_DIR:-$(cat "$HOME/.config/horus/repo" 2>/dev/null || echo "$HOME/Horus-Project")}"
+HORUS_DIR="${HORUS_DIR:-$(cat "$HOME/.config/horus/repo" 2>/dev/null || echo "$HOME/Horus-Core")}"
 SRC="/usr/share/icons/Bibata-Modern-Classic"
 GTK3="$HOME/.config/gtk-3.0/settings.ini"; GTK4="$HOME/.config/gtk-4.0/settings.ini"
 
@@ -76,7 +76,7 @@ case "${1:-}" in
   --all)
     python3 - << 'PY' | while read -r tema color; do
 import sys, os
-sys.path.insert(0, os.environ.get("HORUS_DIR", os.path.expanduser("~/Horus-Project")))
+sys.path.insert(0, os.environ.get("HORUS_DIR", os.path.expanduser("~/Horus-Core")))
 import horus_themes as kt
 for t in kt.lista_temas():
     print(t.lower().replace(" ", "_"), kt.rotar_hex("#7a2be8", t))

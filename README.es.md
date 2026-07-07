@@ -21,7 +21,7 @@ bash <(curl -fsSL https://raw.githubusercontent.com/Johankyuk/Horus-Project/main
 ## Qué instala
 
 - **Niri** (tiling scrollable) con **Noctalia** como shell: barra, dock, centro de control y lockscreen.
-- Terminal **foot**, gestor de archivos **Thunar**, navegador **Zen**.
+- Terminal **foot**, gestor de archivos **PCManFM-Qt**, navegador **Zen**.
 - Greeter **SDDM** con tema propio (sugar-dark-horus), coherente con el wallpaper.
 - Apps de diario: VLC, imv, OBS, OnlyOffice, VSCodium, Steam (con su fix de Wayland), Sober (Roblox).
 - Gestión de **energía y GPU híbrida** para portátiles con dGPU NVIDIA.

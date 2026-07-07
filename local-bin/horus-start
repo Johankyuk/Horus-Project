@@ -17,7 +17,7 @@ _find_repo() {
         cat "$conf"; return
     fi
     local d
-    for d in "$HOME/Horus-Project" "$HOME/Proyectos/horus" "$HOME/Documentos/horus" \
+    for d in "$HOME/Horus-Core" "$HOME/Proyectos/horus" "$HOME/Documentos/horus" \
              "$HOME/Documentos/Configs" "$HOME/.local/share/horus"; do
         [ -f "$d/setup_master.sh" ] && { echo "$d"; return; }
     done
