@@ -1496,6 +1496,37 @@ else
         fi
     fi
 
+    # --- 2c. Shutdown en negro: tema mínimo de Plymouth solo para el apagado ---
+    # Plymouth quedó fuera del initramfs y su plymouth-start.service enmascarado, así
+    # que el logo NO se ve al bootear. Pero los servicios de apagado
+    # (plymouth-{poweroff,reboot,halt}.service, 'static') siguen activos y taparían los
+    # mensajes de procesos deteniéndose. Se les da un tema negro liso (módulo script,
+    # sin dibujar nada). set-default SIN -R a propósito: cambia solo el symlink que lee
+    # el modo shutdown; NO regenera el initramfs, así el boot negro queda intacto.
+    if pacman -Q plymouth &>/dev/null; then
+        sudo install -Dm644 /dev/stdin /usr/share/plymouth/themes/horus-black/horus-black.plymouth <<'HORUSEOF'
+[Plymouth Theme]
+Name=Horus Black
+Description=Pantalla negra, sin elementos
+ModuleName=script
+
+[script]
+ImageDir=/usr/share/plymouth/themes/horus-black
+ScriptFile=/usr/share/plymouth/themes/horus-black/horus-black.script
+HORUSEOF
+        sudo install -Dm644 /dev/stdin /usr/share/plymouth/themes/horus-black/horus-black.script <<'HORUSEOF'
+Window.SetBackgroundTopColor(0, 0, 0);
+Window.SetBackgroundBottomColor(0, 0, 0);
+HORUSEOF
+        if [ "$(plymouth-set-default-theme 2>/dev/null)" != "horus-black" ]; then
+            sudo plymouth-set-default-theme horus-black &>/dev/null \
+                && did "Apagado en negro: tema Plymouth 'horus-black' aplicado (solo shutdown)." \
+                || fallo "No se pudo fijar el tema Plymouth horus-black."
+        else
+            skip "Tema Plymouth de apagado ya en 'horus-black'."
+        fi
+    fi
+
     # --- 3. Script de branding (título Horus + silencio garantizado) ---
     sudo tee /usr/local/bin/horus-title >/dev/null <<'HORUSEOF'
 #!/bin/bash
