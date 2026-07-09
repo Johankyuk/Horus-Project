@@ -493,7 +493,7 @@ if [ "$DO_CHECK" -eq 1 ]; then
     chk "Fastfetch logo"               "test -f $HOME/.config/fastfetch/logo.txt"
     chk "Prompt minimalista (PS1)"     "grep -q '# horus-prompt' $HOME/.bashrc"
     chk "Utilidad de proyección"       "test -x $HOME/.local/bin/proyectar"
-    chk "Límite de batería (servicio)" "systemctl is-enabled battery-charge-limit.service"
+    chk "Límite de batería (servicio)" "systemctl is-enabled horus-bat-limit.service"
     chk "Kernel: imagen presente en /boot"  "ls /boot/vmlinuz-* &>/dev/null"
     chk "Kernel: paquete linux* instalado"  "pacman -Qq | grep -qE '^linux(-cachyos|-lts|-zen|-hardened|-rt)?\$'"
     chk "Kernel: entrada en systemd-boot"   "sudo ls /boot/loader/entries/ &>/dev/null"
@@ -1742,30 +1742,56 @@ for d in PFP Wallpapers; do
     fi
 done
 
-# Límite de carga de batería (solo laptops que exponen el umbral en sysfs)
+# Límite de carga de batería (solo laptops que exponen el umbral en sysfs).
+# Cold-boot: el EC descarta una escritura única temprana; por eso horus-bat-limit reintenta.
 if [ "$DO_BATERIA" -eq 1 ]; then
     if ls /sys/class/power_supply/BAT*/charge_control_end_threshold &>/dev/null; then
-        # ¿Ya existe el servicio habilitado y con el MISMO límite?
-        if systemctl is-enabled battery-charge-limit.service &>/dev/null \
-            && systemctl cat battery-charge-limit.service 2>/dev/null | grep -q "echo ${BAT_LIMIT} >"; then
-            skip "Límite de batería ya fijado en ${BAT_LIMIT}%."
-        else
-            sudo tee /etc/systemd/system/battery-charge-limit.service > /dev/null << EOF
+        # Migración: retirar servicios viejos de una sola escritura sin reintento.
+        for old in battery-charge-limit kyu-bat-limit; do
+            if [ -f "/etc/systemd/system/$old.service" ]; then
+                sudo systemctl disable --now "$old.service" &>/dev/null || true
+                sudo rm -f "/etc/systemd/system/$old.service"
+                did "Servicio de batería viejo retirado: $old.service."
+            fi
+        done
+
+        # Script con reintento+verificación (el EC en frío tarda en aceptar la escritura).
+        sudo install -Dm755 /dev/stdin /usr/local/bin/horus-bat-limit << 'BATEOF'
+#!/bin/bash
+LIMIT="${1:-80}"
+for i in $(seq 1 15); do
+    ok=1
+    for f in /sys/class/power_supply/BAT*/charge_control_end_threshold; do
+        [ -e "$f" ] || { ok=0; continue; }
+        echo "$LIMIT" > "$f" 2>/dev/null
+        [ "$(cat "$f" 2>/dev/null)" = "$LIMIT" ] || ok=0
+    done
+    [ "$ok" = 1 ] && exit 0
+    sleep 2
+done
+exit 0
+BATEOF
+
+        sudo tee /etc/systemd/system/horus-bat-limit.service > /dev/null << EOF
 [Unit]
-Description=Limitar carga de batería al ${BAT_LIMIT}%
+Description=Horus: tope de carga ${BAT_LIMIT}% (reintento para arranque en frio)
 After=multi-user.target
 
 [Service]
 Type=oneshot
-ExecStart=/bin/bash -c 'for b in /sys/class/power_supply/BAT*/charge_control_end_threshold; do echo ${BAT_LIMIT} > "\$b"; done'
+ExecStart=/usr/local/bin/horus-bat-limit ${BAT_LIMIT}
 
 [Install]
 WantedBy=multi-user.target
 EOF
-            sudo systemctl daemon-reload
-            sudo systemctl enable --now battery-charge-limit.service \
-                && did "Límite de batería fijado en ${BAT_LIMIT}%." \
-                || fallo "No se pudo habilitar el límite de batería."
+        sudo systemctl daemon-reload
+        if systemctl is-enabled horus-bat-limit.service &>/dev/null; then
+            sudo systemctl start horus-bat-limit.service &>/dev/null || true
+            skip "Límite de batería ya institucionalizado (${BAT_LIMIT}%); reaplicado."
+        elif sudo systemctl enable --now horus-bat-limit.service &>/dev/null; then
+            did "Límite de batería fijado en ${BAT_LIMIT}% (horus-bat-limit, con reintento)."
+        else
+            fallo "No se pudo habilitar horus-bat-limit.service."
         fi
     else
         nota "Este equipo no expone umbral de carga; límite de batería omitido."
