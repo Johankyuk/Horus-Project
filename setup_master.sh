@@ -2120,17 +2120,24 @@ sec_sistema() {
     #    los patrones ingleses ya no matchean.
     sudo tee /usr/local/bin/horus-noctalia-es >/dev/null <<'NOCTAEOF'
 #!/usr/bin/env bash
-# horus-noctalia-es — traduce cadenas hardcodeadas de Noctalia (toasts del
-# perfil de energía). Lo reaplica zzz-horus-noctalia-es.hook tras updates.
+# horus-noctalia-es — ajusta los toasts de perfil de energía de Noctalia segun
+# el idioma persistido en ~/.config/horus/lang. Lo reaplica el hook tras updates.
+#   es -> nombres en español · en -> nombres en inglés (upstream).
+#   El fix del ICONO se aplica SIEMPRE (es independiente del idioma).
 set -u
 F=/etc/xdg/quickshell/noctalia-shell/Services/Power/PowerProfileService.qml
 [ -f "$F" ] || exit 0
+# Idioma: el hook corre como root; el archivo vive en el HOME del usuario real.
+_home=$(getent passwd "${SUDO_USER:-$USER}" | cut -d: -f6)
+LANG_H=$(cat "${_home:-$HOME}/.config/horus/lang" 2>/dev/null || echo es)   # fallback: es
 # Fix del ICONO del toast (valido en cualquier idioma): upstream deriva la clave
 # del icono del NOMBRE del perfil; con nombres traducidos la clave no existe y
 # cae a la calavera. getIcon() ya devuelve la clave correcta siempre.
 sed -i 's|profileName.toLowerCase().replace(" ", "")|root.getIcon()|' "$F"
-# Traduccion de nombres (es-especifico; gate por idioma pendiente):
-sed -i 's|return "Performance";|return "Rendimiento";|; s|return "Balanced";|return "Equilibrado";|; s|return "Power saver";|return "Ahorro de energía";|' "$F"
+# Nombres: solo en español. En 'en' se dejan los del upstream (no se tocan).
+if [ "$LANG_H" = "es" ]; then
+    sed -i 's|return "Performance";|return "Rendimiento";|; s|return "Balanced";|return "Equilibrado";|; s|return "Power saver";|return "Ahorro de energía";|' "$F"
+fi
 NOCTAEOF
     sudo chmod +x /usr/local/bin/horus-noctalia-es
     sudo mkdir -p /etc/pacman.d/hooks

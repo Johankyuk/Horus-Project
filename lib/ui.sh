@@ -192,5 +192,7 @@ ${KS[rtheme]} ${_tpick}"
     return 0
   fi
   _kui_confirm "${KS[cfq]}" || { echo; gum style --foreground "$KUI_SUB" "  ${KS[cancel]}"; return 1; }
+  # Persistir idioma elegido (fuente de verdad para horus-noctalia-es y su hook).
+  mkdir -p "$HOME/.config/horus" && printf '%s\n' "$HORUS_LANG" > "$HOME/.config/horus/lang"
   return 0
 }
