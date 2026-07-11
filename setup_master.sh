@@ -621,12 +621,28 @@ export HORUS_DGPU
 
 # PLAN + CONFIRMACION (flujo completo pregunta; --solo va directo)
 if [ "${#SOLO_SECS[@]}" -eq 0 ]; then
-    # Instalación completa fija (sin wizard): morado, español, todas las secciones.
-    HORUS_MODE=full
-    HORUS_THEME="Morado"
-    HORUS_LANG_NAME="Español"
-    declare -A PKG_ON=([nucleo]=1 [cosmeticos]=1 [apps]=1 [gaming]=1)
-    [ "${HORUS_DGPU:-0}" = "1" ] && PKG_ON[rendimiento]=1
+    # Asistente interactivo (idioma → modo → paquetes → tema). Vive en lib/ui.sh;
+    # lo comparte preview/ui-preview.sh para que ambos usen la misma UI.
+    if [ ! -f "$SCRIPT_DIR/lib/ui.sh" ]; then
+        err "Falta $SCRIPT_DIR/lib/ui.sh (capa de interfaz del instalador)."; exit 1
+    fi
+    HORUS_SDBOOT=1; bootctl is-installed &>/dev/null || HORUS_SDBOOT=0
+    # shellcheck source=/dev/null
+    source "$SCRIPT_DIR/lib/ui.sh"
+    [ "${HORUS_PREVIEW:-0}" -eq 1 ] && export HORUS_UI_PREVIEW=1
+    horus_wizard || { echo; exit 0; }   # cancelar en el asistente = salir limpio
+
+    # Puente asistente → maquinaria: HORUS_MODE + HORUS_PKGS -> PKG_ON.
+    # El núcleo siempre entra; el loop de abajo (intacto) arma SELECCION.
+    declare -A PKG_ON=([nucleo]=1)
+    case "$HORUS_MODE" in
+        full)
+            PKG_ON+=([cosmeticos]=1 [apps]=1 [gaming]=1)
+            [ "${HORUS_DGPU:-0}" = "1" ] && PKG_ON[rendimiento]=1 ;;
+        custom)
+            for _p in "${HORUS_PKGS[@]}"; do PKG_ON[$_p]=1; done ;;
+        min) : ;;
+    esac
     SELECCION=()
     for _s in "${SECCIONES[@]}"; do
         [ -n "${PKG_ON[${SEC_PKG[$_s]:-}]:-}" ] && SELECCION+=("$_s")
