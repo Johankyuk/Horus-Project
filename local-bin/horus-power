@@ -2,9 +2,11 @@
 # horus-power — energía + ventiladores + GPU (Hybrid, para laptop). Horus.
 #
 # MODELO (todo gira en torno al PERFIL, sin comandos por juego):
-#   La base es Hybrid + la dGPU se AUTOSUSPENDE (D3cold) cuando nada la usa, y el
-#   compositor renderiza en la iGPU. Resultado según el perfil (toggle de Noctalia):
-#     • silencio (quiet)      -> la dGPU duerme (~0W). Los juegos corren en la iGPU.
+#   La base es Hybrid. En BATERÍA la dGPU se autosuspende (D3cold, ~0W) cuando nada
+#   la usa; en AC NO llega a dormir: queda en idle P8 (~2W). El compositor renderiza
+#   en la iGPU. Bajo carga el wataje de la dGPU varía según el perfil (toggle Noctalia):
+#     • silencio (quiet)      -> perfil power-saver. En batería la dGPU duerme; los
+#                                juegos corren en la iGPU.
 #     • equilibrado (balanced)-> los juegos usan la dGPU a wataje medio.
 #     • rendimiento (perf)    -> los juegos usan la dGPU a tope (~máx del chip).
 #   El "gatillo" es el wrapper de juegos (horus-gpu / wrapper de Steam) que mira el
