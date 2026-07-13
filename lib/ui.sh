@@ -75,9 +75,9 @@ _kui_load_strings() {
 # Opciones de tema (display por idioma) y su clave canónica para horus-theme
 _kui_theme_options() {
   if [[ "$HORUS_LANG" == "es" ]]; then
-    printf '%s\n' "Morado" "Azul eléctrico" "Azul rey" "Rosa brillante" "Rosa pálido" "Amarillo" "Naranja" "Rojo" "Gris" "${KS[town]}" "${KS[tnone]}"
+    printf '%s\n' "Morado" "Azul eléctrico" "Azul rey" "Rosa brillante" "Rosa pálido" "Amarillo" "Naranja" "Rojo" "Gris" "${KS[tnone]}"
   else
-    printf '%s\n' "Purple" "Electric blue" "Royal blue" "Bright pink" "Pale pink" "Yellow" "Orange" "Red" "Gray" "${KS[town]}" "${KS[tnone]}"
+    printf '%s\n' "Purple" "Electric blue" "Royal blue" "Bright pink" "Pale pink" "Yellow" "Orange" "Red" "Gray" "${KS[tnone]}"
   fi
 }
 _kui_theme_key() {  # display elegido → clave canónica (la que entiende horus-theme), "__custom__" o "" (sin tema)
