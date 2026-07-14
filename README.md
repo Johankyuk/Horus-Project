@@ -8,7 +8,7 @@ Horus is a one-command post-install for **CachyOS**. It takes **Noctalia** — a
 
 It's a personal setup, kept public as a reference. It isn't a distro and doesn't pretend to be one — no fake `os-release`, no impersonation. Just CachyOS, configured the way I run it.
 
-Built on **Noctalia v4.7.7** (the frozen final of the v4 branch). A port to **Noctalia v5** is planned once v5 leaves beta — for now this is the stable snapshot for v4.
+Built on **Noctalia v4.7.7** — and it stays there. Horus installs a vendored, frozen copy from its own release instead of whatever the repos serve that day, so a reinstall reproduces the exact environment that was tested. A port to **Noctalia v5** is planned once v5 leaves beta.
 
 ## Install
 
@@ -111,7 +111,7 @@ Horus es un post-install de un comando para **CachyOS**. Toma **Noctalia** —un
 
 Es un setup personal, público como referencia. No es una distro ni pretende serlo —sin `os-release` falso, sin disfraces. Solo CachyOS, configurado como lo uso yo.
 
-Construido sobre **Noctalia v4.7.7** (el final congelado de la rama v4). El port a **Noctalia v5** está planeado para cuando v5 salga de beta —por ahora este es el snapshot estable para v4.
+Construido sobre **Noctalia v4.7.7** —y ahí se queda. Horus instala una copia congelada y vendorizada desde su propio release en vez de lo que los repos sirvan ese día, así que una reinstalación reproduce el entorno exacto que se probó. El port a **Noctalia v5** está planeado para cuando v5 salga de beta.
 
 ## Instalación
 

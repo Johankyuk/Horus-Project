@@ -178,7 +178,6 @@ PKGS_REPO=(
 # AUR: una sola invocacion del helper. Incluye dudosos (paru los toma de repos
 # si resulta que no son AUR, sin tronar el batch).
 PKGS_AUR=(
-    noctalia-shell
     lavat-git cbonsai
     catppuccin-gtk-theme-mocha bibata-cursor-theme rar   # papirus-folders fuera: las carpetas por tema las genera horus-theme (overlay Horus-Folders)
     wob                             # OSD del brillo del teclado (horus-kbd-osd)
@@ -377,12 +376,13 @@ mostrar_plan() {
 
 # REGISTRO DE SECCIONES (para el flujo normal y para --solo)
 # Orden canónico de ejecución. --solo acepta estos nombres o su número.
-SECCIONES=(snapshot update repos aur flatpak opcionales configs generables launcher gtk cursor sddm branding steam teclado recursos proyeccion sesion sistema zen rendimiento gaming)
+SECCIONES=(snapshot update repos aur noctalia flatpak opcionales configs generables launcher gtk cursor sddm branding steam teclado recursos proyeccion sesion sistema zen rendimiento gaming)
 declare -A SEC_DESC=(
     [snapshot]="Snapshot pre-setup"
     [update]="Actualizar sistema"
     [repos]="Paquetes de repos oficiales"
     [aur]="Paquetes AUR"
+    [noctalia]="Noctalia v4 congelado (release del repo)"
     [opcionales]="Apps opcionales"
     [configs]="Configs (Niri, Noctalia, Foot) + scripts"
     [generables]="Generables (Noctalia scheme, fastfetch)"
@@ -408,10 +408,10 @@ declare -A SEC_DESC=(
 # 'recursos' solo usa sudo para el servicio de batería: hereda DO_BATERIA.
 declare -A SEC_SUDO=( [sistema]=1 [snapshot]=1 [update]=1 [repos]=1 [aur]=1 [opcionales]=1
     [configs]=1 [generables]=0 [launcher]=0 [gtk]=0 [cursor]=0 [sddm]=1 [branding]=1 [steam]=1
-    [teclado]=1 [recursos]=$DO_BATERIA [proyeccion]=0 [sesion]=1 [flatpak]=1 [zen]=1 [rendimiento]=1 [gaming]=0 )
+    [teclado]=1 [recursos]=$DO_BATERIA [proyeccion]=0 [sesion]=1 [flatpak]=1 [zen]=1 [rendimiento]=1 [gaming]=0 [noctalia]=1 )
 declare -A SEC_RED=(  [sistema]=1 [snapshot]=0 [update]=1 [repos]=1 [aur]=1 [opcionales]=1
     [configs]=0 [generables]=0 [launcher]=0 [gtk]=0 [cursor]=0 [sddm]=0 [branding]=0
-    [steam]=0 [teclado]=0 [recursos]=0 [proyeccion]=0 [sesion]=0 [flatpak]=1 [zen]=0 [rendimiento]=1 [gaming]=1 )
+    [steam]=0 [teclado]=0 [recursos]=0 [proyeccion]=0 [sesion]=0 [flatpak]=1 [zen]=0 [rendimiento]=1 [gaming]=1 [noctalia]=1 )
 
 # Mapeo sección → paquete (taxonomía del asistente). El núcleo SIEMPRE corre.
 # El asistente decide qué paquetes encender; la SELECCION se arma filtrando
@@ -422,7 +422,7 @@ declare -A SEC_PKG=(
     [branding]=nucleo [teclado]=nucleo [recursos]=nucleo [proyeccion]=nucleo [sesion]=nucleo [sistema]=nucleo
     [gtk]=cosmeticos [cursor]=cosmeticos
     [flatpak]=apps [opcionales]=apps [zen]=apps [steam]=apps
-    [rendimiento]=nucleo [gaming]=gaming )
+    [rendimiento]=nucleo [gaming]=gaming [noctalia]=nucleo )
 
 _tabla_secciones() {
     local i=1 sec
@@ -477,7 +477,7 @@ if [ "$DO_CHECK" -eq 1 ]; then
     section "Healthcheck Horus"
     chk(){ if eval "$2" &>/dev/null; then ok "$1"; else warn "$1 — FALTA"; fi; }
     chk "Niri instalado"               "pacman -Q niri"
-    chk "Noctalia instalado"           "pacman -Q noctalia-shell"
+    chk "Noctalia v4 congelado (4.7.7-3)" "pacman -Q noctalia-shell | grep -q 4.7.7-3"
     chk "Config de Niri desplegada"    "test -f $HOME/.config/niri/config.kdl"
     chk "settings.json de Noctalia"    "test -f $HOME/.config/noctalia/settings.json"
     chk "Color scheme 'Horus Project'"        "test -f '$HOME/.config/noctalia/colorschemes/Horus Project/Horus Project.json'"
@@ -749,6 +749,81 @@ instala_repo "${PKGS_REPO[@]}"
 # SECCIÓN «aur» — PAQUETES AUR (un solo batch)
 sec_aur() {
 instala_aur "${PKGS_AUR[@]}"
+}
+
+# SECCIÓN «noctalia» — NOCTALIA v4 CONGELADO
+# El shell NO se toma de los repos: se instala desde el release del propio repo
+# (noctalia-v4-freeze). Motivo: CachyOS sirve la versión del día, y el día que
+# suba a v5 toda la integración de Horus (IPC colorScheme, wallpaper, el parche
+# de PowerProfileService) deja de existir — v5 es una reescritura en C++/OpenGL
+# sin capa QML. Vendorizar los .pkg reproduce el artefacto exacto ya probado,
+# sin recompilar y sin depender de que CachyOS siga sirviendo estas versiones.
+#
+# Contingencia: noctalia-qs es binario compilado contra Qt6. Si un update de Qt
+# rompe el ABI, el binario congelado deja de cargar. Para ese día el source está
+# forkeado y pineado: Johankyuk/noctalia @ horus-freeze-v4.7.7 y
+# Johankyuk/noctalia-qs @ horus-freeze-v0.0.12.
+sec_noctalia() {
+local base="https://github.com/Johankyuk/Horus-Project/releases/download/noctalia-v4-freeze"
+local tmp="/tmp/horus-noctalia-freeze"
+local -a PKGS=(
+    "noctalia-qs-0.0.12-1.1-x86_64.pkg.tar.zst"
+    "noctalia-shell-4.7.7-3-any.pkg.tar.zst"
+    "cachyos-niri-noctalia-1.1.2-1-any.pkg.tar.zst"
+)
+local pins="noctalia-shell noctalia-qs cachyos-niri-noctalia"
+local p faltan=0 f ok=1
+
+# --- 1: pin en pacman.conf. Sin esto el primer -Syu se lleva el freeze y todo
+#        lo anterior fue en vano. Los tres juntos: si el meta queda libre y pide
+#        noctalia-shell>=5, rompe la resolución de dependencias en cada update.
+for p in $pins; do
+    grep -qE "^IgnorePkg.*\b$p\b" /etc/pacman.conf || faltan=1
+done
+if [ "$faltan" = 1 ]; then
+    sudo cp -n /etc/pacman.conf /etc/pacman.conf.horus-bak 2>/dev/null
+    if grep -qE '^IgnorePkg' /etc/pacman.conf; then
+        for p in $pins; do
+            grep -qE "^IgnorePkg.*\b$p\b" /etc/pacman.conf || \
+                sudo sed -i "/^IgnorePkg/ s/\$/ $p/" /etc/pacman.conf
+        done
+    else
+        sudo sed -i "0,/^#IgnorePkg/{s|^#IgnorePkg.*|IgnorePkg   = $pins|}" /etc/pacman.conf
+    fi
+    did "Noctalia v4 fijado en IgnorePkg (ningún -Syu lo mueve)."
+else
+    skip "IgnorePkg ya fija Noctalia v4."
+fi
+
+# --- 2: ¿ya están las versiones exactas? ---
+if [ "$(pacman -Q noctalia-shell 2>/dev/null | awk '{print $2}')" = "4.7.7-3" ] && \
+   [ "$(pacman -Q noctalia-qs   2>/dev/null | awk '{print $2}')" = "0.0.12-1.1" ]; then
+    skip "Noctalia 4.7.7-3 ya instalado (versión congelada)."
+    return
+fi
+
+# --- 3: bajar los artefactos. curl y no gh: en un fresh install no hay auth. ---
+mkdir -p "$tmp"
+for f in "${PKGS[@]}"; do
+    [ -s "$tmp/$f" ]     || curl -fsSL -o "$tmp/$f"     "$base/$f"     || ok=0
+    [ -s "$tmp/$f.sig" ] || curl -fsSL -o "$tmp/$f.sig" "$base/$f.sig" || ok=0
+done
+if [ "$ok" != 1 ]; then
+    nota "No se pudo bajar el freeze; cayendo al repo (versión del día, puede no ser v4)."
+    instala_aur noctalia-shell
+    return
+fi
+
+# --- 4: instalar. --noconfirm no es cosmético: están en IgnorePkg y pacman
+#        pediría confirmación para instalarlos igual. Los .sig se validan
+#        contra el keyring de CachyOS del sistema.
+log "Instalando Noctalia v4 congelado desde el release"
+if (cd "$tmp" && sudo pacman -U --noconfirm "${PKGS[@]}"); then
+    did "Noctalia 4.7.7-3 instalado desde el release congelado."
+    rm -rf "$tmp"
+else
+    fallo "Falló pacman -U del freeze de Noctalia."
+fi
 }
 
 # SECCIÓN «opcionales» — APPS OPCIONALES (menú interactivo)
