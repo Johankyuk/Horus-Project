@@ -267,6 +267,24 @@ instala_aur() {   # $@ = paquetes AUR
 # Backup en una sola carpeta por corrida; solo se crea si de verdad se pisa algo.
 BACKUP_DIR="$HOME/.config-backup-$(date +%Y%m%d-%H%M%S)"
 _backup_hecho=0
+# Render node by-path de la iGPU: la tarjeta cuyo driver NO es nvidia. Se usa
+# para fijar render-drm-device de Niri en la máquina destino, en vez de dejar el
+# PCI de mi equipo hardcodeado en el repo. Devuelve vacío si hay cero o más de
+# una candidata (p.ej. iGPU AMD + dGPU AMD): ahí es ambiguo y NO se adivina.
+_render_igpu() {
+    local card drv pci node; local -a hits=()
+    for card in /sys/class/drm/card[0-9]*; do
+        [ -e "$card/device/driver" ] || continue
+        drv=$(basename "$(readlink -f "$card/device/driver")")
+        case "$drv" in amdgpu|i915|xe) ;; *) continue ;; esac
+        pci=$(basename "$(readlink -f "$card/device")")
+        node="/dev/dri/by-path/pci-$pci-render"
+        [ -e "$node" ] && hits+=("$node")
+    done
+    [ "${#hits[@]}" = 1 ] && { echo "${hits[0]}"; return 0; }
+    return 1
+}
+
 deploy() {  # $1 = ruta relativa dentro de config/  (ej: niri, foot, noctalia/settings.json)
     local rel="$1" src="$CONFIG_DIR/$1" dst="$HOME/.config/$1"
     if [ ! -e "$src" ]; then nota "config/$rel no existe en el paquete; se omite."; return; fi
@@ -935,7 +953,40 @@ sec_configs() {
 # NOTA: noctalia/settings.json NO va aquí; se construye parcheado en la sección 'generables' (lleva
 # el scheme fijo y las rutas reescritas a $HOME), si no el comparador lo vería
 # "cambiado" en cada corrida porque el repo trae rutas /home/kyu.
-deploy niri
+# niri: se despliega REESCRIBIENDO render-drm-device al render node de la iGPU de
+# ESTA máquina. El repo trae un valor concreto (el PCI de mi equipo); copiado tal
+# cual, en otra laptop apuntaría a un bus inexistente y Niri caería a la dGPU
+# (consumo en batería) o no arrancaría. Se parchea una COPIA TEMPORAL, igual que
+# foot: el repo no se toca y queda idempotente. Por diseño da igual qué capture
+# horus-sync — el deploy siempre reescribe con lo detectado aquí.
+if [ -d "$CONFIG_DIR/niri" ]; then
+    _niri_tmp=$(mktemp -d)
+    cp -r "$CONFIG_DIR/niri/." "$_niri_tmp/"
+    _render=$(_render_igpu)
+    if [ -z "$_render" ]; then
+        nota "No se pudo identificar la iGPU sin ambigüedad; render-drm-device se deja como viene en el repo."
+    elif [ -f "$_niri_tmp/cfg/misc.kdl" ]; then
+        sed -i -E "s#(render-drm-device[[:space:]]+)\"[^\"]*\"#\\1\"$_render\"#" "$_niri_tmp/cfg/misc.kdl"
+    fi
+    _niri_dst="$HOME/.config/niri"
+    if [ -e "$_niri_dst" ] && diff -rq "$_niri_tmp" "$_niri_dst" &>/dev/null; then
+        skip "Config ~/.config/niri ya estaba al día."
+    else
+        if [ -e "$_niri_dst" ]; then
+            mkdir -p "$BACKUP_DIR"; cp -r "$_niri_dst" "$BACKUP_DIR/niri" && _backup_hecho=1
+        fi
+        mkdir -p "$(dirname "$_niri_dst")"; rm -rf "$_niri_dst"
+        if cp -r "$_niri_tmp" "$_niri_dst"; then
+            did "Config desplegada: ~/.config/niri (render-drm-device → ${_render:-sin cambio})."
+            NEED_RELOGIN=1; RELOGIN_RAZONES+=("config niri")
+        else
+            fallo "No se pudo desplegar config/niri."
+        fi
+    fi
+    rm -rf "$_niri_tmp"
+else
+    nota "config/niri no existe en el paquete; se omite."
+fi
 
 # Paleta Qt: el ESQUEMA (colores) sí viaja desde el repo; qt6ct.conf NO, porque
 # lleva la ruta absoluta al esquema (cambia por usuario) — lo escribe la sección
