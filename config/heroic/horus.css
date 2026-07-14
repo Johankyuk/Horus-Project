@@ -23,3 +23,23 @@
   --primary-button: #8b45f7;
   --secondary-button: #2a1145;
 }
+
+/* ── Fix: selects/dropdowns/inputs sin fondo (Heroic no los liga a :root) ── */
+:root {
+  --input-background: #2a1145;
+  --search-bar-background: #2a1145;
+  --search-bar-border: #8b45f7;
+}
+select, .selectFieldWrapper select {
+  background-color: #2a1145 !important;
+  color: #f5f5f5 !important;
+  border: 1px solid #8b45f7 !important;
+}
+select option {
+  background-color: #18092b !important;
+  color: #f5f5f5 !important;
+}
+input[type="text"], input[type="search"], input[type="number"], textarea {
+  background-color: #2a1145 !important;
+  color: #f5f5f5 !important;
+}
