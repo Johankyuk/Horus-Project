@@ -151,10 +151,20 @@ PKGS_REPO=(
     # PCManFM-Qt invoca el Archiver fijado en config/pcmanfm-qt (xarchiver).
     # p7zip/zip/unzip son el backend; tar/gzip/bzip2/xz vienen en el sistema base.
     xarchiver p7zip zip unzip
-    # Meta de gaming oficial de CachyOS: trae la capa de compatibilidad (gamemode,
-    # mangohud, gamescope, proton-cachyos, wine, vulkan…) y los launchers (Lutris,
-    # Heroic…). Goverlay queda oculto del lanzador (lista OCULTAR). Requiere multilib.
+    # Meta de gaming oficial de CachyOS (proton-cachyos, wine, vulkan, gamemode…).
+    # OJO (jul 2026): el meta YA NO trae mangohud/gamescope/lutris/heroic como deps
+    # duras — se listan explicitos abajo. Requiere multilib.
     cachyos-gaming-meta
+    # Overlay de metricas en juego (FPS/GPU/CPU); horus-theme genera su .conf
+    # con la paleta del tema activo (gen_mangohud). lib32 para juegos de 32 bits.
+    mangohud lib32-mangohud
+    # Microcompositor por-juego: upscale FSR / cap de FPS via horus-fsr (local-bin)
+    gamescope
+    # Launcher universal (itch.io, .exe sueltos, emulacion); runner Wine-GE se
+    # instala desde ProtonPlus, no de repos
+    lutris
+    # Gestor GUI de versiones Proton-GE / Wine-GE para Steam, Lutris y Heroic
+    protonplus
     # Iconos (base; las carpetas por tema salen del overlay Horus-Folders de horus-theme)
     papirus-icon-theme
     # SDDM (el tema sugar-dark-horus ya no usa QtGraphicalEffects; qt5-quickcontrols2
@@ -181,6 +191,8 @@ PKGS_AUR=(
     lavat-git cbonsai
     catppuccin-gtk-theme-mocha bibata-cursor-theme rar   # papirus-folders fuera: las carpetas por tema las genera horus-theme (overlay Horus-Folders)
     wob                             # OSD del brillo del teclado (horus-kbd-osd)
+    # Launcher de Epic/GOG/Amazon; tema CSS Horus lo genera horus-theme (gen_heroic)
+    heroic-games-launcher-bin
     # Espejo de pantalla para presentaciones (modo 'espejo' de ~/.local/bin/proyectar).
     # Niri no clona salidas de forma nativa; wl-mirror es el unico camino (fragil).
     wl-mirror
