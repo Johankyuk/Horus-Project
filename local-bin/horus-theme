@@ -367,18 +367,17 @@ def patch_sddm(tema, ts):
         warn("theme.conf SDDM (repo) no hallado; SDDM sin recolorear."); return
     out = _sub_hex(open(src, encoding="utf-8").read(), lambda h: True, tema)  # ambos colores rotan
     try:
-        actual = subprocess.run(["sudo", "-n", "cat", dst], capture_output=True, text=True)
+        if os.path.isfile(dst) and open(dst, encoding="utf-8").read() == out:
+            skip(f"SDDM theme.conf ya en '{tema}'."); return
     except Exception:
-        actual = None
-    if actual is not None and actual.returncode == 0 and actual.stdout == out:
-        skip(f"SDDM theme.conf ya en '{tema}'."); return
-    if subprocess.run(["sudo", "-n", "true"], capture_output=True).returncode != 0:
-        warn("SDDM omitido: necesita root. Corre 'sudo horus-theme' o aplícalo en el setup."); return
-    r = subprocess.run(["sudo", "tee", dst], input=out, text=True, capture_output=True)
+        pass
+    # Helper root de propósito único (sudoers NOPASSWD instalado por el setup).
+    r = subprocess.run(["sudo", "-n", "/usr/local/bin/horus-sddm-apply"],
+                       input=out, text=True, capture_output=True)
     if r.returncode == 0:
         did(f"SDDM theme.conf -> {tema}"); _CAMBIOS[0] = True
     else:
-        warn("No se pudo escribir el theme.conf de SDDM.")
+        warn("SDDM omitido: falta horus-sddm-apply o su regla sudoers (seccion sddm del setup).")
 
 # ── MangoHud: overlay de juego sigue la paleta del tema ──
 def gen_mangohud(tema, ts):

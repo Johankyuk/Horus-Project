@@ -1556,6 +1556,11 @@ fi
 
 # SECCIÓN «sddm» — SDDM Sugar-Dark (morado, español)
 sec_sddm() {
+    # Regla sudoers acotada: horus-theme recolorea SDDM sin pedir contraseña.
+    # El helper es root:root en /usr/local/bin (ya desplegado por configs).
+    echo "$USER ALL=(root) NOPASSWD: /usr/local/bin/horus-sddm-apply" | sudo tee /etc/sudoers.d/horus-sddm >/dev/null
+    sudo chmod 440 /etc/sudoers.d/horus-sddm
+    sudo visudo -c >/dev/null || { rm -f /etc/sudoers.d/horus-sddm; warn "sudoers horus-sddm invalido; removido."; }
 local HORUS_THEME="sugar-dark-horus"; local THEME_SRC="$SCRIPT_DIR/$HORUS_THEME"; local THEME_DEST="/usr/share/sddm/themes/$HORUS_THEME"
 _sddm_cambio=0
 

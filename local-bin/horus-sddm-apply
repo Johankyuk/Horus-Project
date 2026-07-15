@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# horus-sddm-apply — escribe el theme.conf de SDDM desde stdin.
+# Propósito único: destino fijo, sin argumentos. Pensado para sudoers NOPASSWD.
+set -euo pipefail
+DST="/usr/share/sddm/themes/sugar-dark-horus/theme.conf"
+[[ $EUID -eq 0 ]] || { echo "horus-sddm-apply: requiere root" >&2; exit 1; }
+[[ -d ${DST%/*} ]] || { echo "horus-sddm-apply: tema sugar-dark-horus no instalado" >&2; exit 1; }
+cat > "$DST"
