@@ -403,8 +403,9 @@ mostrar_plan() {
 
 # REGISTRO DE SECCIONES (para el flujo normal y para --solo)
 # Orden canónico de ejecución. --solo acepta estos nombres o su número.
-SECCIONES=(snapshot update repos aur noctalia flatpak opcionales configs generables launcher gtk cursor sddm branding steam teclado recursos proyeccion sesion sistema zen rendimiento gaming)
+SECCIONES=(snapshot update repos aur noctalia flatpak opcionales configs generables launcher gtk cursor sddm branding steam teclado recursos proyeccion sesion sistema zen rendimiento gaming privacidad)
 declare -A SEC_DESC=(
+    [privacidad]="Privacidad de red (DoT, firewall, MAC aleatoria)"
     [snapshot]="Snapshot pre-setup"
     [update]="Actualizar sistema"
     [repos]="Paquetes de repos oficiales"
@@ -433,10 +434,10 @@ declare -A SEC_DESC=(
 # sudo no se pide password ni keep-alive (p.ej. --solo=proyeccion corre sin
 # privilegios); ídem con la red y con exigir paru/yay.
 # 'recursos' solo usa sudo para el servicio de batería: hereda DO_BATERIA.
-declare -A SEC_SUDO=( [sistema]=1 [snapshot]=1 [update]=1 [repos]=1 [aur]=1 [opcionales]=1
+declare -A SEC_SUDO=( [privacidad]=1 [sistema]=1 [snapshot]=1 [update]=1 [repos]=1 [aur]=1 [opcionales]=1
     [configs]=1 [generables]=0 [launcher]=0 [gtk]=0 [cursor]=0 [sddm]=1 [branding]=1 [steam]=1
     [teclado]=1 [recursos]=$DO_BATERIA [proyeccion]=0 [sesion]=1 [flatpak]=1 [zen]=1 [rendimiento]=1 [gaming]=0 [noctalia]=1 )
-declare -A SEC_RED=(  [sistema]=1 [snapshot]=0 [update]=1 [repos]=1 [aur]=1 [opcionales]=1
+declare -A SEC_RED=(  [privacidad]=1 [sistema]=1 [snapshot]=0 [update]=1 [repos]=1 [aur]=1 [opcionales]=1
     [configs]=0 [generables]=0 [launcher]=0 [gtk]=0 [cursor]=0 [sddm]=0 [branding]=0
     [steam]=0 [teclado]=0 [recursos]=0 [proyeccion]=0 [sesion]=0 [flatpak]=1 [zen]=0 [rendimiento]=1 [gaming]=1 [noctalia]=1 )
 
@@ -1039,13 +1040,19 @@ else
     nota "config/foot no existe en el paquete; se omite."
 fi
 
-# Scripts personales -> ~/.local/bin (si la carpeta trae algo además del .gitkeep)
+# Scripts del ecosistema -> /usr/local/bin (canonico) + symlink en ~/.local/bin
+# (compatibilidad con referencias viejas). install -m755 normaliza permisos
+# SIEMPRE: un clon sin bit +x ya no reproduce el deploy silenciosamente roto.
 if [ -d "$LOCALBIN_DIR" ] && [ -n "$(find "$LOCALBIN_DIR" -type f ! -name '.gitkeep' 2>/dev/null)" ]; then
     mkdir -p "$HOME/.local/bin"
-    cp -r "$LOCALBIN_DIR/." "$HOME/.local/bin/"
-    find "$HOME/.local/bin" -name '.gitkeep' -delete 2>/dev/null
-    chmod +x "$HOME/.local/bin/"* 2>/dev/null || true
-    did "Scripts personales copiados a ~/.local/bin."
+    for _f in "$LOCALBIN_DIR"/*; do
+        [ -f "$_f" ] || continue
+        _b="${_f##*/}"
+        case "$_b" in *.bak*|*.pyc|.gitkeep) continue ;; esac
+        sudo install -m755 "$_f" "/usr/local/bin/$_b"
+        ln -sf "/usr/local/bin/$_b" "$HOME/.local/bin/$_b"
+    done
+    did "Scripts desplegados a /usr/local/bin (+symlinks en ~/.local/bin)."
 else
     skip "Sin scripts en local-bin (nada que copiar)."
 fi
@@ -1110,7 +1117,49 @@ fi
 }
 
 # SECCIÓN «generables» — GENERABLES KYU (colorscheme, fastfetch, steam, alias)
+gen_lanzadores() {
+    # Lanzadores .desktop para los wizards interactivos. Idempotente: sobreescribe
+    # (archivos 100% generados) y elimina lanzadores de comandos inexistentes.
+    # Exec con ruta ABSOLUTA: el entorno de Niri no garantiza ~/.local/bin en PATH.
+    local _dir="$HOME/.local/share/applications" _id _nombre _cmd _ruta _ejec
+    mkdir -p "$_dir"
+    while IFS='|' read -r _id _nombre _cmd; do
+        if [ -x "/usr/local/bin/$_cmd" ]; then _ruta="/usr/local/bin/$_cmd"
+        else
+            _ruta=$(command -v "$_cmd" 2>/dev/null) || {
+                nota "Lanzador omitido: $_nombre ($_cmd no existe)"
+                rm -f "$_dir/horus-$_id.desktop"; continue; }
+        fi
+        _ejec="foot -e $_ruta"
+        # horus-estado termina al instante: pausa para que foot no se cierre.
+        [ "$_id" = "estado" ] && _ejec="foot -e bash -c \"$_ruta; read -rsn1\""
+        cat > "$_dir/horus-$_id.desktop" <<DESKEOF
+[Desktop Entry]
+Type=Application
+Name=$_nombre
+Comment=Asistente Horus
+Exec=$_ejec
+Icon=preferences-system
+Terminal=false
+Categories=Settings;Utility;
+DESKEOF
+        did "Lanzador: $_nombre -> $_ruta"
+    done <<'LISTA'
+tema|Horus Tema|horus-theme
+privacidad|Horus Privacidad|horus-privacy
+estado|Horus Estado|horus-estado
+LISTA
+    command -v update-desktop-database >/dev/null && update-desktop-database "$_dir" || true
+}
+
+sec_privacidad() {
+    # El script ya fue desplegado a /usr/local/bin por el deploy de local-bin.
+    sudo pacman -S --needed --noconfirm ufw
+    /usr/local/bin/horus-privacy --aplicar
+}
+
 sec_generables() {
+    gen_lanzadores
 
 # --- Color scheme "Horus Project" para Noctalia (paleta morada fija) ---
 NOCTALIA_SCHEME_DIR="$HOME/.config/noctalia/colorschemes/Horus Project"
