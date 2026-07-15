@@ -160,9 +160,6 @@ PKGS_REPO=(
     mangohud lib32-mangohud
     # Microcompositor por-juego: upscale FSR / cap de FPS via horus-fsr (local-bin)
     gamescope
-    # Launcher universal (itch.io, .exe sueltos, emulacion); runner Wine-GE se
-    # instala desde ProtonPlus, no de repos
-    lutris
     # Gestor GUI de versiones Proton-GE / Wine-GE para Steam, Lutris y Heroic
     protonplus
     # Iconos (base; las carpetas por tema salen del overlay Horus-Folders de horus-theme)
