@@ -2354,7 +2354,7 @@ NOCTAEOF
 # SECCIÓN «zen» — tema Horus para Zen (chrome, prefs, extensiones)
 #   policies.json -> /opt/zen-browser-bin/distribution (sudo)
 #   user.js + CSS -> todos los perfiles de ~/.zen (nombres con espacios)
-#   Dark Reader (config/zen/darkreader-horus.json) se IMPORTA a mano.
+#   Dark Reader (config/darkreader/darkreader.<tema>.json) se IMPORTA a mano; hay un preset por tema.
 sec_zen() {
     local src="${HORUS_DIR:-$HOME/Horus-Project}/config/zen"
     local zen_dir="$HOME/.zen" ini="$HOME/.zen/profiles.ini"
@@ -2390,7 +2390,7 @@ sec_zen() {
     done
     if [ "$count" -gt 0 ]; then
         did "Tema Horus desplegado en $count perfil(es) de Zen."
-        nota "Dark Reader: importa config/zen/darkreader-horus.json (Manage settings → Import)."
+        nota "Dark Reader: importa config/darkreader/darkreader.<tema>.json (Manage settings → Import); hay un preset por cada tema Horus."
     else
         nota "Ningún perfil de Zen en disco; abre Zen y reintenta."
     fi
