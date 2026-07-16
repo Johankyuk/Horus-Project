@@ -366,18 +366,34 @@ def patch_sddm(tema, ts):
     if not os.path.isfile(src):
         warn("theme.conf SDDM (repo) no hallado; SDDM sin recolorear."); return
     out = _sub_hex(open(src, encoding="utf-8").read(), lambda h: True, tema)  # ambos colores rotan
+    # ── theme.conf (colores) ──
+    if os.path.isfile(dst) and open(dst, encoding="utf-8").read() == out:
+        skip(f"SDDM theme.conf ya en '{tema}'.")
+    else:
+        r = subprocess.run(["sudo", "-n", "/usr/local/bin/horus-sddm-apply"],
+                           input=out, text=True, capture_output=True)
+        if r.returncode == 0:
+            did(f"SDDM theme.conf -> {tema}"); _CAMBIOS[0] = True
+        else:
+            warn("SDDM omitido: falta horus-sddm-apply o su regla sudoers (seccion sddm del setup).")
+            return
+    # ── Background.png = wallpaper del tema (mismo PNG que el escritorio) ──
+    png = wallpaper_del_tema(tema)
+    if not png:
+        warn("SDDM fondo omitido: no hay PNG del tema en el repo."); return
+    fondo_dst = os.path.join(os.path.dirname(dst), "Background.png")
+    datos = open(png, "rb").read()
     try:
-        if os.path.isfile(dst) and open(dst, encoding="utf-8").read() == out:
-            skip(f"SDDM theme.conf ya en '{tema}'."); return
+        if os.path.isfile(fondo_dst) and open(fondo_dst, "rb").read() == datos:
+            skip("SDDM fondo ya en el wallpaper del tema."); return
     except Exception:
         pass
-    # Helper root de propósito único (sudoers NOPASSWD instalado por el setup).
-    r = subprocess.run(["sudo", "-n", "/usr/local/bin/horus-sddm-apply"],
-                       input=out, text=True, capture_output=True)
+    r = subprocess.run(["sudo", "-n", "/usr/local/bin/horus-sddm-apply", "fondo"],
+                       input=datos, capture_output=True)
     if r.returncode == 0:
-        did(f"SDDM theme.conf -> {tema}"); _CAMBIOS[0] = True
+        did(f"SDDM fondo -> {os.path.basename(png)}"); _CAMBIOS[0] = True
     else:
-        warn("SDDM omitido: falta horus-sddm-apply o su regla sudoers (seccion sddm del setup).")
+        warn("SDDM fondo no se pudo escribir (helper fallo).")
 
 # ── MangoHud: overlay de juego sigue la paleta del tema ──
 def gen_mangohud(tema, ts):
