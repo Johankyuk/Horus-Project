@@ -108,7 +108,7 @@ Column {
 
                 background: Rectangle {
                     radius: config.RoundCorners / 2
-                    color: "#F0E6FF"
+                    color: config.InputColor
                 }
 
                 enter: Transition {
@@ -445,7 +445,7 @@ Column {
 
             contentItem: Text {
                 text: parent.text
-                color: "#F0E6FF"
+                color: config.InputColor
                 font.pointSize: root.font.pointSize
                 horizontalAlignment: Text.AlignHCenter
                 verticalAlignment: Text.AlignVCenter
@@ -470,7 +470,7 @@ Column {
                     }
                     PropertyChanges {
                         target: loginButton.contentItem
-                        color: "#F0E6FF"
+                        color: config.InputColor
                     }
                 },
                 State {
@@ -484,7 +484,7 @@ Column {
                     PropertyChanges {
                         target: loginButton.contentItem
                         opacity: 1
-                        color: "#F0E6FF"
+                        color: config.InputColor
                     }
                 },
                 State {
@@ -498,7 +498,7 @@ Column {
                     PropertyChanges {
                         target: loginButton.contentItem
                         opacity: 1
-                        color: "#F0E6FF"
+                        color: config.InputColor
                     }
                 },
                 State {

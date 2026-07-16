@@ -73,7 +73,7 @@ Pane {
             id: formBackground
             anchors.fill: form
             anchors.centerIn: form
-            color: "#A01E1240"
+            color: config.PanelColor
             opacity: config.PartialBlur == "true" ? 0.3 : 1
             z: 1
         }
