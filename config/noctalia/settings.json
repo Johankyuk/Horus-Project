@@ -9,7 +9,7 @@
         "density": "compact",
         "enableClipPreview": true,
         "enableClipboardChips": true,
-        "enableClipboardHistory": false,
+        "enableClipboardHistory": true,
         "enableClipboardSmartIcons": true,
         "enableSessionSearch": true,
         "enableSettingsSearch": true,
@@ -17,8 +17,7 @@
         "iconMode": "native",
         "ignoreMouseInput": false,
         "overviewLayer": true,
-        "pinnedApps": [
-        ],
+        "pinnedApps": [],
         "position": "center",
         "screenshotAnnotationTool": "",
         "showCategories": true,
@@ -28,8 +27,7 @@
         "viewMode": "list"
     },
     "audio": {
-        "mprisBlacklist": [
-        ],
+        "mprisBlacklist": [],
         "preferredPlayer": "",
         "spectrumFrameRate": 144,
         "spectrumMirrored": true,
@@ -59,8 +57,7 @@
         "middleClickAction": "none",
         "middleClickCommand": "",
         "middleClickFollowMouse": false,
-        "monitors": [
-        ],
+        "monitors": [],
         "mouseWheelAction": "none",
         "mouseWheelWrap": true,
         "outerCorners": false,
@@ -69,8 +66,7 @@
         "rightClickAction": "controlCenter",
         "rightClickCommand": "",
         "rightClickFollowMouse": true,
-        "screenOverrides": [
-        ],
+        "screenOverrides": [],
         "showCapsule": true,
         "showOnWorkspaceSwitch": true,
         "showOutline": true,
@@ -173,8 +169,7 @@
         }
     },
     "brightness": {
-        "backlightDeviceMappings": [
-        ],
+        "backlightDeviceMappings": [],
         "brightnessStep": 5,
         "enableDdcSupport": false,
         "enforceMinimum": true
@@ -267,8 +262,7 @@
         "enabled": false,
         "gridSnap": false,
         "gridSnapScale": false,
-        "monitorWidgets": [
-        ],
+        "monitorWidgets": [],
         "overviewEnabled": true
     },
     "dock": {
@@ -292,8 +286,7 @@
         "launcherIconColor": "none",
         "launcherPosition": "start",
         "launcherUseDistroLogo": false,
-        "monitors": [
-        ],
+        "monitors": [],
         "onlySameOutput": false,
         "pinnedApps": [
             "zen",
@@ -357,8 +350,7 @@
         "lockScreenAnimations": true,
         "lockScreenBlur": 0.31,
         "lockScreenCountdownDuration": 1000,
-        "lockScreenMonitors": [
-        ],
+        "lockScreenMonitors": [],
         "lockScreenTint": 0,
         "passwordChars": true,
         "radiusRatio": 1,
@@ -452,8 +444,7 @@
         "enabled": true,
         "location": "top_right",
         "lowUrgencyDuration": 1,
-        "monitors": [
-        ],
+        "monitors": [],
         "normalUrgencyDuration": 1,
         "overlayLayer": true,
         "respectExpireTimeout": false,
@@ -483,8 +474,7 @@
             3
         ],
         "location": "bottom",
-        "monitors": [
-        ],
+        "monitors": [],
         "overlayLayer": true
     },
     "plugins": {
@@ -583,8 +573,7 @@
         "warningColor": "#b340e0"
     },
     "templates": {
-        "activeTemplates": [
-        ],
+        "activeTemplates": [],
         "enableUserTheming": true
     },
     "ui": {
@@ -606,14 +595,12 @@
         "directory": "/home/kyu/Horus-Project/Wallpapers",
         "enableMultiMonitorDirectories": false,
         "enabled": true,
-        "favorites": [
-        ],
+        "favorites": [],
         "fillColor": "#000000",
         "fillMode": "crop",
         "hideWallpaperFilenames": false,
         "linkLightAndDarkWallpapers": true,
-        "monitorDirectories": [
-        ],
+        "monitorDirectories": [],
         "overviewBlur": 0.4,
         "overviewEnabled": false,
         "overviewTint": 0.6,
