@@ -40,3 +40,19 @@
         match namespace="^noctalia-wallpaper*"
         place-within-backdrop true
     }
+
+    // ─────── Horus: reglas importadas (dots niri-noctalia) ───────
+
+    // Picture-in-Picture flotante (Zen y derivados Firefox)
+    window-rule {
+        match app-id=r#"^zen"# title="^Picture-in-Picture$"
+        match app-id=r#"firefox$"# title="^Picture-in-Picture$"
+        open-floating true
+    }
+
+    // Gestores de contraseñas: invisibles en capturas y grabaciones
+    window-rule {
+        match app-id=r#"^org\.keepassxc\.KeePassXC$"#
+        match app-id=r#"^org\.gnome\.World\.Secrets$"#
+        block-out-from "screen-capture"
+    }
