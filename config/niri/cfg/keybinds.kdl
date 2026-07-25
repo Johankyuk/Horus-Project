@@ -12,7 +12,7 @@ binds {
     Mod+G                               hotkey-overlay-title="Ciclar perfil de energía" { spawn-sh "n=$(powerprofilesctl get); case $n in power-saver) powerprofilesctl set balanced;; balanced) powerprofilesctl set performance;; *) powerprofilesctl set power-saver;; esac"; }
     Mod+F13                             hotkey-overlay-title="Control Center (Super tap)" { spawn-sh "qs -c noctalia-shell ipc call controlCenter toggle"; }
     Mod+A                               hotkey-overlay-title="Control Center Noctalia" { spawn-sh "qs -c noctalia-shell ipc call controlCenter toggle"; }
-    Mod+B                               hotkey-overlay-title="Abrir navegador: Zen" { spawn "zen-browser"; }
+    Mod+B                               hotkey-overlay-title="Abrir navegador: Zen" { spawn "zen-beta"; }
     Mod+Shift+L                         hotkey-overlay-title="Lock Screen: noctalia lock" { spawn-sh "qs -c noctalia-shell ipc call lockScreen lock"; }
     Mod+Shift+Q                         hotkey-overlay-title="Session Menu: noctalia sessionMenu" { spawn-sh "qs -c noctalia-shell ipc call sessionMenu toggle"; }
     Mod+E                               hotkey-overlay-title="File Manager: PCManFM-Qt" { spawn "pcmanfm-qt"; }
