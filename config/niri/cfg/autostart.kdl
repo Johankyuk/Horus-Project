@@ -3,5 +3,4 @@
 
 
 spawn-at-startup "horus-kbd-start"
-spawn-at-startup "horus-shell"
 spawn-at-startup "horus-lock-listener"
