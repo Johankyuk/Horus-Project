@@ -17,7 +17,8 @@
         "iconMode": "native",
         "ignoreMouseInput": false,
         "overviewLayer": true,
-        "pinnedApps": [],
+        "pinnedApps": [
+        ],
         "position": "center",
         "screenshotAnnotationTool": "",
         "showCategories": true,
@@ -27,7 +28,8 @@
         "viewMode": "list"
     },
     "audio": {
-        "mprisBlacklist": [],
+        "mprisBlacklist": [
+        ],
         "preferredPlayer": "",
         "spectrumFrameRate": 144,
         "spectrumMirrored": true,
@@ -43,11 +45,11 @@
         "backgroundOpacity": 1,
         "barType": "framed",
         "capsuleColorKey": "none",
-        "capsuleOpacity": 1,
+        "capsuleOpacity": 0.75,
         "contentPadding": 3,
         "density": "spacious",
         "displayMode": "always_visible",
-        "enableExclusionZoneInset": false,
+        "enableExclusionZoneInset": true,
         "fontScale": 1,
         "frameRadius": 12,
         "frameThickness": 8,
@@ -57,7 +59,8 @@
         "middleClickAction": "none",
         "middleClickCommand": "",
         "middleClickFollowMouse": false,
-        "monitors": [],
+        "monitors": [
+        ],
         "mouseWheelAction": "none",
         "mouseWheelWrap": true,
         "outerCorners": false,
@@ -66,7 +69,8 @@
         "rightClickAction": "controlCenter",
         "rightClickCommand": "",
         "rightClickFollowMouse": true,
-        "screenOverrides": [],
+        "screenOverrides": [
+        ],
         "showCapsule": true,
         "showOnWorkspaceSwitch": true,
         "showOutline": true,
@@ -169,8 +173,9 @@
         }
     },
     "brightness": {
-        "backlightDeviceMappings": [],
-        "brightnessStep": 5,
+        "backlightDeviceMappings": [
+        ],
+        "brightnessStep": 2,
         "enableDdcSupport": false,
         "enforceMinimum": true
     },
@@ -262,7 +267,8 @@
         "enabled": false,
         "gridSnap": false,
         "gridSnapScale": false,
-        "monitorWidgets": [],
+        "monitorWidgets": [
+        ],
         "overviewEnabled": true
     },
     "dock": {
@@ -286,14 +292,14 @@
         "launcherIconColor": "none",
         "launcherPosition": "start",
         "launcherUseDistroLogo": false,
-        "monitors": [],
+        "monitors": [
+        ],
         "onlySameOutput": false,
         "pinnedApps": [
-            "zen",
+            "pcmanfm-qt",
             "steam",
             "onlyoffice-desktopeditors",
             "codium",
-            "pcmanfm-qt",
             "org.vinegarhq.Sober"
         ],
         "pinnedStatic": true,
@@ -350,7 +356,8 @@
         "lockScreenAnimations": true,
         "lockScreenBlur": 0.31,
         "lockScreenCountdownDuration": 1000,
-        "lockScreenMonitors": [],
+        "lockScreenMonitors": [
+        ],
         "lockScreenTint": 0,
         "passwordChars": true,
         "radiusRatio": 1,
@@ -371,8 +378,8 @@
         "colorGeneration": "",
         "darkModeChange": "",
         "enabled": false,
-        "performanceModeDisabled": "",
-        "performanceModeEnabled": "",
+        "performanceModeDisabled": "horus-fans-max off",
+        "performanceModeEnabled": "horus-fans-max on",
         "screenLock": "",
         "screenUnlock": "",
         "session": "",
@@ -399,7 +406,7 @@
         "firstDayOfWeek": 1,
         "hideWeatherCityName": true,
         "hideWeatherTimezone": true,
-        "name": "Boca del Rio",
+        "name": "Soledad de Doblado",
         "showCalendarEvents": true,
         "showCalendarWeather": true,
         "showWeekNumberInCalendar": false,
@@ -420,20 +427,20 @@
         "wifiDetailsViewMode": "grid"
     },
     "nightLight": {
-        "autoSchedule": true,
+        "autoSchedule": false,
         "dayTemp": "6500",
-        "enabled": false,
+        "enabled": true,
         "forced": false,
-        "manualSunrise": "06:30",
-        "manualSunset": "18:30",
-        "nightTemp": "4000"
+        "manualSunrise": "00:00",
+        "manualSunset": "23:30",
+        "nightTemp": "6000"
     },
     "noctaliaPerformance": {
         "disableDesktopWidgets": true,
         "disableWallpaper": true
     },
     "notifications": {
-        "backgroundOpacity": 1,
+        "backgroundOpacity": 0.5,
         "clearDismissed": true,
         "criticalUrgencyDuration": 1,
         "density": "default",
@@ -444,7 +451,8 @@
         "enabled": true,
         "location": "top_right",
         "lowUrgencyDuration": 1,
-        "monitors": [],
+        "monitors": [
+        ],
         "normalUrgencyDuration": 1,
         "overlayLayer": true,
         "respectExpireTimeout": false,
@@ -465,16 +473,13 @@
     },
     "osd": {
         "autoHideMs": 500,
-        "backgroundOpacity": 1,
+        "backgroundOpacity": 0.5,
         "enabled": true,
         "enabledTypes": [
-            0,
-            1,
-            2,
-            3
         ],
         "location": "bottom",
-        "monitors": [],
+        "monitors": [
+        ],
         "overlayLayer": true
     },
     "plugins": {
@@ -499,15 +504,15 @@
                 "action": "suspend",
                 "command": "",
                 "countdownEnabled": true,
-                "enabled": true,
-                "keybind": "1"
+                "enabled": false,
+                "keybind": ""
             },
             {
                 "action": "hibernate",
                 "command": "",
                 "countdownEnabled": true,
-                "enabled": false,
-                "keybind": ""
+                "enabled": true,
+                "keybind": "1"
             },
             {
                 "action": "reboot",
@@ -573,7 +578,8 @@
         "warningColor": "#b340e0"
     },
     "templates": {
-        "activeTemplates": [],
+        "activeTemplates": [
+        ],
         "enableUserTheming": true
     },
     "ui": {
@@ -595,12 +601,14 @@
         "directory": "/home/kyu/Horus-Project/Wallpapers",
         "enableMultiMonitorDirectories": false,
         "enabled": true,
-        "favorites": [],
+        "favorites": [
+        ],
         "fillColor": "#000000",
         "fillMode": "crop",
         "hideWallpaperFilenames": false,
         "linkLightAndDarkWallpapers": true,
-        "monitorDirectories": [],
+        "monitorDirectories": [
+        ],
         "overviewBlur": 0.4,
         "overviewEnabled": false,
         "overviewTint": 0.6,
