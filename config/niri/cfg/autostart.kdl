@@ -3,5 +3,5 @@
 
 
 spawn-at-startup "horus-kbd-start"
-spawn-at-startup "horus-kbd-osd"
+spawn-at-startup "qs" "-p" "/home/kyu/horus-shell/shell.qml"
 spawn-at-startup "horus-lock-listener"
