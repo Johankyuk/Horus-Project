@@ -16,3 +16,4 @@ setup_master.sh.bak
 __pycache__/
 *.pyc
 pendientes-horus*.md
+*.bak.*
